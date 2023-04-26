@@ -20,7 +20,7 @@ def test():
 async def extract():
     return await ExtractData(
         env_file = './.env',
-        ini_file = './conf/us-east.ini',
+        ini_file = './ext/conf/us-east.ini',
         ini_sect = 'url_dat_src'
     ).ext_dat()
 
