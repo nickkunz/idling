@@ -30,7 +30,7 @@ RUN rm /etc/nginx/nginx.conf &&\
     rm /etc/nginx/sites-enabled/default
 
 ## copy server and wsgi configs
-COPY ./ext/nginx.conf /etc/nginx/
+COPY ./ext/conf/nginx.conf /etc/nginx/
 COPY ./conf/gunicorn.conf.py /etc/gunicorn/
 
 ## symlink server configs
