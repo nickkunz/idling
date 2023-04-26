@@ -42,12 +42,10 @@ def subset(sio = sio):
 ## process thread
 threading.Thread(target = lambda: subset(sio = sio)).start()
 
-## run app
+## run app (does not run with gunicorn)
 # if __name__ == '__main__':
-#     sio.run(
-#         app = app,
+#     app.run(
 #         debug = LocalEnv.DEBUG,
 #         host = LocalEnv.URL,
 #         port = 8000
 #     )
-# (does not run with gunicorn)

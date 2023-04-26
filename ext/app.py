@@ -19,8 +19,8 @@ def test():
 @app.route('/extract', methods = ['GET'])
 async def extract():
     return await ExtractData(
-        env_file = './.env', 
-        ini_file = './us-east-configure.ini', 
+        env_file = './.env',
+        ini_file = './conf/us-east.ini',
         ini_sect = 'url_dat_src'
     ).ext_dat()
 
