@@ -7,7 +7,7 @@ from flask_socketio import SocketIO
 ## modules
 sys.path.insert(0, './')
 from .src.subset import find_idle
-from conf.environ import LocalEnv
+# from conf.environ import LocalEnv
 
 ## app and socket
 app = Flask(__name__)

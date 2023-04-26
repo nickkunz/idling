@@ -5,7 +5,7 @@ from quart import Quart, Response
 ## modules
 sys.path.insert(0, './')
 from .src.extract import ExtractData
-from conf.environ import LocalEnv
+# from conf.environ import LocalEnv
 
 ## app
 app = Quart(__name__)
