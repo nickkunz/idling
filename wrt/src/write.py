@@ -5,7 +5,7 @@ import socketio
 import psycopg2
 
 ## end point
-src = 'ws://localhost:4080/'
+src = 'http://localhost:4080/'
 hst = 'localhost'
 hst_prt = 5432
 
@@ -106,12 +106,20 @@ def on_message(json_data):
 
         ## save insert changes
         cnn.commit()
-        print('Client wrote to database.')
+        print('Client wrote to http://{x}:{y}.'.format(
+            x = hst,
+            y = hst_prt
+            )
+        )
 
     ## undo insert attempt
     except:
         cnn.rollback()
-        print("Client failed to write to database.")
+        print('Client failed to write to http://{x}:{y}.'.format(
+            x = hst,
+            y = hst_prt
+            )
+        )
 
 ## connect to database
 n_try_db = 3
@@ -126,7 +134,11 @@ while i < n_try_db:
             port = 5432,
         )
         cur = cnn.cursor()
-        print("Client connected to database.")
+        print('Client connected to http://{x}:{y}.'.format(
+            x = hst,
+            y = hst_prt
+            )
+        )
         break
 
     except:
