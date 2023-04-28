@@ -15,7 +15,7 @@ services:
     deploy:
       restart_policy:
         condition: unless-stopped
-        delay: 1s
+        delay: 2s
         window: 60s
       resources:
         limits:
@@ -24,7 +24,7 @@ services:
           memory: 64M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:6080/"]
-      interval: 1s
+      interval: 2s
       timeout: 10s
       retries: 3
       start_period: 10s
@@ -43,7 +43,7 @@ services:
     deploy:
       restart_policy:
         condition: unless-stopped
-        delay: 1s
+        delay: 2s
         window: 30s
       resources:
         limits:
@@ -52,7 +52,7 @@ services:
           memory: 512M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4080/"]
-      interval: 1s
+      interval: 2s
       timeout: 10s
       retries: 3
       start_period: 10s
@@ -71,13 +71,14 @@ services:
     deploy:
       restart_policy:
         condition: unless-stopped
-        delay: 1s
+        delay: 2s
         window: 60s
     volumes:
+      - store:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${DB_USER}", "-d", "${DB_NAME}"]
-      interval: 1s
+      interval: 2s
       timeout: 10s
       retries: 3
       start_period: 10s
@@ -99,7 +100,7 @@ services:
     deploy:
       restart_policy:
         condition: unless-stopped
-        delay: 1s
+        delay: 2s
         window: 30s
       resources:
         limits:
@@ -114,3 +115,7 @@ services:
         condition: service_healthy
       database:
         condition: service_healthy
+
+volumes:
+  store:
+    driver: local
