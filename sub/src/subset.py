@@ -1,8 +1,13 @@
 ## libaries
+import sys
 import time
 import json
 import requests as rq
 from google.transit import gtfs_realtime_pb2
+
+## modules
+sys.path.insert(0, './')
+from conf.conf import ini_var
 
 ## get request
 def get_req_par(url, key = None):
@@ -36,7 +41,7 @@ def get_req_par(url, key = None):
     )
 
     ## validate header
-    header = message.header                 
+    header = message.header
     if (header.gtfs_realtime_version == '2.0' or \
         header.gtfs_realtime_version == '1.0') and \
         header.incrementality == gtfs_realtime_pb2.FeedHeader.FULL_DATASET:
@@ -94,7 +99,8 @@ def exd_ids(feed_x, ids_x):
         ids_x (list): A list of vehicle IDs to exclude.
 
     Returns:
-        A list of entity objects from `feed_x` whose vehicle ID is not in `ids_x`.
+        A list of entity objects from `feed_x` whose vehicle ID is not in 
+        `ids_x`.
 
     Raises:
         None.
@@ -276,7 +282,8 @@ def feed_idle(buffer, feed_h, move_k, move_m, time_h):
                     'latitude': j.vehicle.position.latitude,
                     'longitude': j.vehicle.position.longitude,
                     'datetime': j.vehicle.timestamp,
-                    'duration': int(j.vehicle.timestamp) - int(i.vehicle.timestamp)
+                    'duration': int(j.vehicle.timestamp) - int(i.vehicle.timestamp),
+                    'source': j.vehicle.vehicle.label
                 }
 
                 ## add time lag of telemetry

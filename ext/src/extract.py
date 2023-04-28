@@ -7,7 +7,7 @@ from google.transit import gtfs_realtime_pb2
 
 ## modules
 sys.path.insert(0, './')
-from conf.conf import ini_con, env_var
+from conf.conf import ini_key, env_var
 
 ## fix for selectors bug
 import selectors
@@ -60,7 +60,7 @@ class ExtractData():
         )
 
         ## api urls
-        self.urls = ini_con(
+        self.urls = ini_key(
             file = self.ini_file,
             sect = self.ini_sect
         )
@@ -80,7 +80,6 @@ class ExtractData():
     async def ext_dat(self):
         try:
             async with aiohttp.ClientSession(trust_env = True) as sess:
-
                 conn = list()
                 for k, i in self.urls.items():
 
@@ -135,7 +134,7 @@ class ExtractData():
 
                 ## process responses
                 feeds = bytes()
-                for i in resps:
+                for url, i in enumerate(resps):
                     content = await i.content.read()
 
                     ## parse protobuf
@@ -143,30 +142,37 @@ class ExtractData():
                     message.ParseFromString(bytes(content))
 
                     # validate header
-                    header = message.header                 
+                    header = message.header
                     if (header.gtfs_realtime_version == '2.0' or \
                         header.gtfs_realtime_version == '1.0') and \
                         header.incrementality == gtfs_realtime_pb2.FeedHeader.FULL_DATASET:
 
                             ## validate entity
                             entity = message.entity
-                            entity_valid = [i for i in entity if (
-                                i.vehicle.vehicle.id and 
-                                i.vehicle.trip.route_id and 
-                                i.vehicle.trip.trip_id and 
-                                i.vehicle.timestamp and 
-                                i.vehicle.position.latitude and 
-                                i.vehicle.position.longitude
+                            entity_valid = [j for j in entity if (
+                                j.vehicle.vehicle.id and 
+                                j.vehicle.trip.route_id and 
+                                j.vehicle.trip.trip_id and 
+                                j.vehicle.timestamp and 
+                                j.vehicle.position.latitude and 
+                                j.vehicle.position.longitude
                                 )
                             ]
 
+                            ## use vehicle label field as data source
+                            url_key = list(self.urls.keys())[url]
+                            url_src = self.urls[url_key]
+                            for j in entity_valid:
+                                j.vehicle.vehicle.label = url_src
+
+                            ## validation end
                             del message.entity[:]
                             message.entity.extend(entity_valid)
 
-                            ## serialize protobuf feed
+                            ## serialize message and append to feed
                             feeds += message.SerializeToString()
 
-                    # close the response connection
+                    # close the connection
                     await i.release()
 
                 ## close session

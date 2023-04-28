@@ -7,7 +7,7 @@ from flask_socketio import SocketIO
 ## modules
 sys.path.insert(0, './')
 from .src.subset import find_idle
-from conf.environ import LocalEnv
+# from conf.environ import LocalEnv
 
 ## app and socket
 app = Flask(__name__)
@@ -35,19 +35,17 @@ def subset(sio = sio):
 
         # emit data thro websocket
         sio.emit(
-            event = 'events',  ## listen for messages titled "events"
+            event = 'events',  ## listen for events/messages titled "events"
             data = i,
         )
 
 ## process thread
 threading.Thread(target = lambda: subset(sio = sio)).start()
 
-## run app
+## run app (does not run with gunicorn)
 # if __name__ == '__main__':
-#     sio.run(
-#         app = app,
+#     app.run(
 #         debug = LocalEnv.DEBUG,
 #         host = LocalEnv.URL,
 #         port = 8000
 #     )
-# (does not run with gunicorn)

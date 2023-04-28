@@ -5,7 +5,7 @@ from quart import Quart, Response
 ## modules
 sys.path.insert(0, './')
 from .src.extract import ExtractData
-from conf.environ import LocalEnv
+# from conf.environ import LocalEnv
 
 ## app
 app = Quart(__name__)
@@ -19,8 +19,8 @@ def test():
 @app.route('/extract', methods = ['GET'])
 async def extract():
     return await ExtractData(
-        env_file = './.env', 
-        ini_file = './us-east-configure.ini', 
+        env_file = './.env',
+        ini_file = './ext/conf/us-east.ini',
         ini_sect = 'url_dat_src'
     ).ext_dat()
 
