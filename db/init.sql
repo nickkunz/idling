@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS idle (
     longitude FLOAT,
     datetime INT,
     duration INT,
+    source TEXT,
     CONSTRAINT unique_columns UNIQUE (
         vehicle_id,
         trip_id,

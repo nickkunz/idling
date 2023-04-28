@@ -66,9 +66,10 @@ def on_message(json_data):
                     latitude,
                     longitude,
                     datetime,
-                    duration
+                    duration,
+                    source
                 )
-                SELECT %s, %s, %s, %s, %s, %s, %s
+                SELECT %s, %s, %s, %s, %s, %s, %s, %s
                 WHERE NOT EXISTS (
                     SELECT 1
                     FROM j
@@ -98,7 +99,8 @@ def on_message(json_data):
                     float(i['longitude']),
                     int(i['datetime']),
                     int(i['duration']),
-                    int(i['duration']),
+                    str(i['source']),
+                    int(i['duration'])
                 )
             )
 
