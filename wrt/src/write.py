@@ -1,13 +1,28 @@
-## libraries 
+## libraries
+import os
 import sys
 import json
 import socketio
 import psycopg2
 
-## end point
-src = 'http://localhost:4080/'
+## modules
+sys.path.insert(0, './')
+ 
+## data source (websocket)
+src = 'ws://localhost:4080/'
+
+## data destination (database)
 hst = 'localhost'
 hst_prt = 5432
+sql_pth = './wrt/conf/insert.sql'
+
+## read sql file
+def read_sql(path):
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            return f.read() ## query contents
+    else:
+        return ""  ## empty string if file does not exist
 
 ## websocket
 sio = socketio.Client(
@@ -44,48 +59,15 @@ def on_message(json_data):
     except:
         print('Client failed to parse JSON response.')
 
-    ## insert data into the table
+    ## insert data into table
     try:
         for i in data:
-            cur.execute(
-                query = """
-                WITH j AS (
-                    SELECT * FROM idle
-                    WHERE vehicle_id = %s
-                    AND trip_id = %s
-                    AND route_id = %s
-                    AND latitude = %s
-                    AND longitude = %s
-                    ORDER BY duration DESC
-                    LIMIT 1
-                )
-                INSERT INTO idle (
-                    vehicle_id,
-                    trip_id,
-                    route_id,
-                    latitude,
-                    longitude,
-                    datetime,
-                    duration,
-                    source
-                )
-                SELECT %s, %s, %s, %s, %s, %s, %s, %s
-                WHERE NOT EXISTS (
-                    SELECT 1
-                    FROM j
-                )
-                OR %s > COALESCE((SELECT duration FROM j), 0)
-                ON CONFLICT (
-                    vehicle_id,
-                    trip_id,
-                    route_id,
-                    latitude,
-                    longitude
-                )
-                DO UPDATE SET duration = EXCLUDED.duration
-                WHERE idle.duration < EXCLUDED.duration;
-                """,
+            query = read_sql(
+                path = sql_pth  ## query file path
+            )
 
+            cur.execute(
+                query = query,
                 vars = (
                     str(i['vehicle_id']),
                     str(i['trip_id']),
@@ -143,7 +125,7 @@ while i < n_try_db:
 
     except:
         print(
-            'Client failed to connect to database. Attempt {x} of {y}.'.format(
+            'Client failed to connect to database. Reconnection attempt {x} of {y}.'.format(
                 x = i + 1,
                 y = n_try_db
             )
@@ -169,7 +151,7 @@ while i < n_try_ws:
         break
 
     except:
-        print('Client failed to connect to {z}. Attempt {x} of {y}.'.format(
+        print('Client failed to connect to {z}. Reconnection attempt {x} of {y}.'.format(
             x = i + 1,
             y = n_try_ws,
             z = src
