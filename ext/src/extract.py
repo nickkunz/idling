@@ -59,7 +59,7 @@ class ExtractData():
             file = self.env_file
         )
 
-        ## api urls
+        ## api urls (data sources)
         self.urls = ini_key(
             file = self.ini_file,
             sect = self.ini_sect
@@ -175,7 +175,7 @@ class ExtractData():
                     ## close the connection
                     await i.close()
 
-                ## close session
+                ## close the session
                 await sess.close()
 
                 ## protobuf, http code, content type
