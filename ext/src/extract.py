@@ -172,8 +172,8 @@ class ExtractData():
                             ## serialize message and append to feed
                             feeds += message.SerializeToString()
 
-                    # close the connection
-                    await i.release()
+                    ## close the connection
+                    await i.close()
 
                 ## close session
                 await sess.close()
