@@ -14,15 +14,16 @@ src = 'ws://localhost:4080/'
 ## data destination (database)
 hst = 'localhost'
 hst_prt = 5432
-sql_pth = './wrt/conf/insert.sql'
+sql_pth_evt = './wrt/conf/events.sql'
+sql_pth_agc = './wrt/conf/agency.sql'
 
 ## read sql file
 def read_sql(path):
     if os.path.exists(path):
         with open(path, 'r') as f:
-            return f.read() ## query contents
+            return f.read()  ## query contents
     else:
-        return ""  ## empty string if file does not exist
+        return ''  ## empty string if file does not exist
 
 ## websocket
 sio = socketio.Client(
@@ -55,25 +56,29 @@ def on_message(json_data):
         data = json.loads(json_data)
         if len(data) == 0:
             print('Client received empty JSON response.')
+            return
 
     except:
         print('Client failed to parse JSON response.')
+        
 
-    ## insert data into table
+    ## insert idle data into table
     try:
         for i in data:
             query = read_sql(
-                path = sql_pth  ## query file path
+                path = sql_pth_evt  ## events query file path
             )
 
             cur.execute(
                 query = query,
                 vars = (
+                    str(i['iata_id']),
                     str(i['vehicle_id']),
                     str(i['trip_id']),
                     str(i['route_id']),
                     float(i['latitude']),
                     float(i['longitude']),
+                    str(i['iata_id']),
                     str(i['vehicle_id']),
                     str(i['trip_id']),
                     str(i['route_id']),
@@ -81,7 +86,6 @@ def on_message(json_data):
                     float(i['longitude']),
                     int(i['datetime']),
                     int(i['duration']),
-                    str(i['source']),
                     int(i['duration'])
                 )
             )
@@ -136,6 +140,11 @@ while i < n_try_db:
 if i == n_try_db:
     print('Client failed to connect to database. Max retries reached.')
     sys.exit(1)
+
+## create transit agency table
+query = read_sql(path = sql_pth_agc) ## transit agency query file path
+cur.execute(query = query)
+cnn.commit()
 
 ## connect to websocket
 n_try_ws = 3

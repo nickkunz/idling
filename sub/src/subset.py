@@ -276,14 +276,14 @@ def feed_idle(buffer, feed_h, move_k, move_m, time_h):
 
                 ## create idle event
                 idle_y = {
+                    'iata_id': j.vehicle.vehicle.label,
                     'vehicle_id': j.vehicle.vehicle.id,
                     'trip_id': j.vehicle.trip.trip_id,
                     'route_id': j.vehicle.trip.route_id,
                     'latitude': j.vehicle.position.latitude,
                     'longitude': j.vehicle.position.longitude,
                     'datetime': j.vehicle.timestamp,
-                    'duration': int(j.vehicle.timestamp) - int(i.vehicle.timestamp),
-                    'source': j.vehicle.vehicle.label
+                    'duration': int(j.vehicle.timestamp) - int(i.vehicle.timestamp)
                 }
 
                 ## add time lag of telemetry
