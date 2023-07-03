@@ -159,11 +159,10 @@ class ExtractData():
                                 )
                             ]
 
-                            ## use vehicle label field as data source
+                            ## use vehicle label field as iata id
                             url_key = list(self.urls.keys())[url]
-                            url_src = self.urls[url_key]
                             for j in entity_valid:
-                                j.vehicle.vehicle.label = url_src
+                                j.vehicle.vehicle.label = str(url_key[-3:]).upper()
 
                             ## validation end
                             del message.entity[:]
@@ -172,8 +171,8 @@ class ExtractData():
                             ## serialize message and append to feed
                             feeds += message.SerializeToString()
 
-                    ## close the connection
-                    await i.close()
+                    ## release the connection
+                    await i.release()
 
                 ## close the session
                 await sess.close()
