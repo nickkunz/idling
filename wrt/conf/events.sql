@@ -1,6 +1,7 @@
 WITH j AS (
-    SELECT * FROM idle
-    WHERE vehicle_id = %s
+    SELECT * FROM events
+    WHERE iata_id = %s
+    AND vehicle_id = %s
     AND trip_id = %s
     AND route_id = %s
     AND latitude = %s
@@ -8,15 +9,15 @@ WITH j AS (
     ORDER BY duration DESC
     LIMIT 1
 )
-INSERT INTO idle (
+INSERT INTO events (
+    iata_id,
     vehicle_id,
     trip_id,
     route_id,
     latitude,
     longitude,
     datetime,
-    duration,
-    source
+    duration
 )
 SELECT %s, %s, %s, %s, %s, %s, %s, %s
 WHERE NOT EXISTS (
@@ -32,4 +33,4 @@ ON CONFLICT (
     longitude
 )
 DO UPDATE SET duration = EXCLUDED.duration
-WHERE idle.duration < EXCLUDED.duration;
+WHERE events.duration < EXCLUDED.duration;
