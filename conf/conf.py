@@ -78,7 +78,7 @@ def ini_var(file, sect):
     config.read(file)
 
     ## three code variable names
-    return [i for i in config[sect]]
+    return [i[-3:] for i in config[sect]]
 
 
 ## env variables
