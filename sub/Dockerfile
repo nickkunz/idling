@@ -57,3 +57,5 @@ USER user
 
 ## run application
 ENTRYPOINT ["bash", "./sub/start.sh"]
+
+## end container

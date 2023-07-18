@@ -40,3 +40,5 @@ USER user
 
 ## run application
 ENTRYPOINT ["bash", "./wrt/start.sh"]
+
+## end container
