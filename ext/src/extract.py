@@ -90,15 +90,6 @@ class ExtractData():
                             sess.get(i, headers = head)
                         )
 
-                    ## chicago user and pass auth headers
-                    elif k == 'url_ord':
-                        auth = self.keys['ORD_API_USR'] + ":" + self.keys['ORD_API_PWD']
-                        auth = base64.b64encode(auth.encode()).decode()
-                        head = {'Authorization': 'Basic ' + auth}
-                        conn.append(
-                            sess.get(i, headers = head)
-                        )
-
                     ## washington dc auth headers
                     elif k == 'url_dca':
                         head = {'api_key': self.keys['DCA_API_KEY']}
@@ -128,7 +119,7 @@ class ExtractData():
 
                 ## join requests
                 resps = await asyncio.gather(
-                    *conn, 
+                    *conn,
                     return_exceptions = False
                 )
 
