@@ -35,7 +35,7 @@ def subset(sio = sio):
 
         # emit data thro websocket
         sio.emit(
-            event = 'events',  ## listen for events/messages titled "events"
+            event = 'events',  ## listen for events titled "events"
             data = i,
         )
 
