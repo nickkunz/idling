@@ -7,7 +7,6 @@ from google.transit import gtfs_realtime_pb2
 
 ## modules
 sys.path.insert(0, './')
-from conf.conf import ini_var
 
 ## get request
 def get_req_par(url, key = None):
@@ -278,8 +277,8 @@ def feed_idle(buffer, feed_h, move_k, move_m, time_h):
                 idle_y = {
                     'iata_id': j.vehicle.vehicle.label,
                     'vehicle_id': j.vehicle.vehicle.id,
-                    'trip_id': j.vehicle.trip.trip_id,
                     'route_id': j.vehicle.trip.route_id,
+                    'trip_id': j.vehicle.trip.trip_id,
                     'latitude': j.vehicle.position.latitude,
                     'longitude': j.vehicle.position.longitude,
                     'datetime': j.vehicle.timestamp,
@@ -304,7 +303,7 @@ def feed_idle(buffer, feed_h, move_k, move_m, time_h):
 
 
 ## find idle events
-def find_idle(url, key = None, time_h = 1, move_m = 10, time_r = 30, loop_n = None):
+def find_idle(url, key = None, time_r = 30, time_h = 1, move_m = 10, loop_n = None):
 
     """
     Desc:
@@ -313,7 +312,7 @@ def find_idle(url, key = None, time_h = 1, move_m = 10, time_r = 30, loop_n = No
         url (str): API end point.
         key (str): API auth key (default None).
         time_h (pos int): time-horizon interval (default 1).
-        time_r (pos int): latency between requests (default 30).
+        time_r (pos int): seconds between requests (default 30).
         loop_n (pos int): limit number of iterations (default None).
 
     Returns:
