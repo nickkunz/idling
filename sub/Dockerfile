@@ -7,10 +7,13 @@ ARG DOCKER_CONTENT_TRUST=1
 ## suppress dialog
 ARG DEBIAN_FRONTEND=noninteractive
 
+## default log level
+ENV LOG_LEVEL=INFO
+
 ## install dependencies
 RUN apt-get update &&\
     apt-get upgrade -y &&\
-    apt-get install -y curl
+    apt-get install -y curl software-properties-common
 RUN apt-get install -y --no-install-recommends --fix-missing\
     python3-pip\
     gunicorn\
@@ -30,7 +33,7 @@ RUN rm /etc/nginx/nginx.conf &&\
 
 ## copy server and wsgi configs
 COPY ./sub/conf/nginx.conf /etc/nginx/
-COPY ./conf/gunicorn.conf.py /etc/gunicorn/
+COPY ./sub/conf/gunicorn.conf.py /etc/gunicorn/
 
 ## symlink server configs
 RUN ln -s /etc/nginx/sites-available/nginx.conf /etc/nginx/sites-enabled/
@@ -50,7 +53,7 @@ COPY . /app
 RUN pip3 install -r ./sub/requirements.txt
 
 ## open port
-EXPOSE 4080
+EXPOSE 7080
 
 ## run non-root user
 USER user
