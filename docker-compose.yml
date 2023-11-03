@@ -1,121 +1,390 @@
-version: '3.9'
-services:
+version: "3.9"
 
+services:
   extract:
     build:
       context: .
       dockerfile: ./ext/Dockerfile
     user: user
-    ports:
-      - '6080:6080'
+    environment:
+      - LOG_LEVEL=INFO
     cap_drop:
       - ALL
       - SETUID
       - SETGID
     deploy:
+      replicas: 3
       restart_policy:
-        condition: unless-stopped
+        condition: on-failure
         delay: 2s
-        window: 60s
+        window: 30s
       resources:
         limits:
-          memory: 256M
+          memory: 1024M
         reservations:
-          memory: 64M
+          memory: 512M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6080/"]
-      interval: 2s
-      timeout: 10s
+      test: ["CMD", "echo", "test"]
+      interval: 30s
+      timeout: 5s
       retries: 3
-      start_period: 10s
 
   subset:
     build:
       context: .
       dockerfile: ./sub/Dockerfile
-    user: user
-    ports:
-      - '4080:4080'
-    cap_drop:
-      - ALL
-      - SETUID
-      - SETGID
-    deploy:
-      restart_policy:
-        condition: unless-stopped
-        delay: 2s
-        window: 30s
-      resources:
-        limits:
-          memory: 2048M
-        reservations:
-          memory: 512M
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4080/"]
-      interval: 2s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    depends_on:
-      extract:
-        condition: service_healthy
-
-  database:
-    image: postgres:15.2
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASS}
-      POSTGRES_DB: ${DB_NAME}
-    ports:
-      - '5432:5432'
-    deploy:
-      restart_policy:
-        condition: unless-stopped
-        delay: 2s
-        window: 60s
-    volumes:
-      - store:/var/lib/postgresql/data
-      - ./wrt/conf/init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${DB_USER}", "-d", "${DB_NAME}"]
-      interval: 2s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    depends_on:
-      extract:
-        condition: service_healthy
-      subset:
-        condition: service_healthy
-
-  write:
-    build:
-      context: .
-      dockerfile: ./wrt/Dockerfile
+      - R_PARAM=30
+      - H_PARAM=1
+      - M_PARAM=10
     user: user
     cap_drop:
       - ALL
       - SETUID
       - SETGID
     deploy:
+      replicas: 3
       restart_policy:
-        condition: unless-stopped
+        condition: on-failure
         delay: 2s
         window: 30s
       resources:
         limits:
-          memory: 512M
+          memory: 1024M
         reservations:
-          memory: 128M
-    network_mode: host
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "echo", "test"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     depends_on:
       extract:
         condition: service_healthy
-      subset:
-        condition: service_healthy
-      database:
+
+  # write:
+  #   build:
+  #     context: .
+  #     dockerfile: ./wrt/Dockerfile
+  #   user: user
+  #   environment:
+  #     - DB_USER="user"
+  #     - DB_PASS="pass"
+  #     - DB_NAME="idle"
+  #   cap_drop:
+  #     - ALL
+  #     - SETUID
+  #     - SETGID
+  #   deploy:
+  #     restart_policy:
+  #       condition: on-failure
+  #       delay: 2s
+  #       window: 30s
+  #     resources:
+  #       limits:
+  #         memory: 256M
+  #       reservations:
+  #         memory: 128M
+  #   network_mode: host
+  #   depends_on:
+  #     extract:
+  #       condition: service_healthy
+  #     subset:
+  #       condition: service_healthy
+  #     database:
+  #       condition: service_healthy
+
+  # database:
+  #   image: postgis/postgis:16-3.4
+  #   environment:
+  #     POSTGRES_USER: user
+  #     POSTGRES_PASSWORD: pass
+  #     POSTGRES_DB: idle
+  #   ports:
+  #     - "5432:5432"
+  #   deploy:
+  #     restart_policy:
+  #       condition: on-failure
+  #       delay: 2s
+  #       window: 60s
+  #   volumes:
+  #     - store:/var/lib/postgresql/data
+  #     - ./wrt/conf/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   healthcheck:
+  #     test: ["CMD", "pg_isready", "-U", "user", "-d", "idle"]
+  #     interval: 2s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+
+  # extract-us-east:
+  #   extends:
+  #     service: extract
+  #   environment:
+  #     - INI_PATH=/app/ext/conf/feed/us-east.ini
+  #     - INI_SECT=api
+  #   ports:
+  #     - "8181:8080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://extract-us-east:8080"]
+
+  # extract-us-west:
+  #   extends:
+  #     service: extract
+  #   environment:
+  #     - INI_PATH=/app/ext/conf/feed/us-west.ini
+  #     - INI_SECT=api
+  #   ports:
+  #     - "8182:8080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://extract-us-west:8080"]
+
+  # extract-us-south:
+  #   extends:
+  #     service: extract
+  #   environment:
+  #     - INI_PATH=/app/ext/conf/feed/us-suth.ini
+  #     - INI_SECT=api
+  #   ports:
+  #     - "8183:8080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://extract-us-south:8080"]
+
+  # extract-us-central:
+  #   extends:
+  #     service: extract
+  #   environment:
+  #     - INI_PATH=/app/ext/conf/feed/us-cent.ini
+  #     - INI_SECT=api
+  #   ports:
+  #     - "8184:8080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://extract-us-central:8080"]
+
+  # extract-us-mountain:
+  #   extends:
+  #     service: extract
+  #   environment:
+  #     - INI_PATH=/app/ext/conf/feed/us-mntn.ini
+  #     - INI_SECT=api
+  #   ports:
+  #     - "8185:8080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://extract-us-mountain:8080"]
+
+  # extract-ca-east:
+  #   extends:
+  #     service: extract
+  #   environment:
+  #     - INI_PATH=/app/ext/conf/feed/ca-east.ini
+  #     - INI_SECT=api
+  #   ports:
+  #     - "8281:8080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://extract-ca-east:8080"]
+
+  # extract-ca-west:
+  #   extends:
+  #     service: extract
+  #   environment:
+  #     - INI_PATH=/app/ext/conf/feed/ca-west.ini
+  #     - INI_SECT=api
+  #   ports:
+  #     - "8282:8080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://extract-ca-west:8080"]
+
+  # extract-eu-west:
+  #   extends:
+  #     service: extract
+  #   environment:
+  #     - INI_PATH=/app/ext/conf/feed/eu-west.ini
+  #     - INI_SECT=api
+  #   ports:
+  #     - "8381:8080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://extract-eu-west:8080"]
+
+  # extract-eu-central:
+  #   extends:
+  #     service: extract
+  #   environment:
+  #     - INI_PATH=/app/ext/conf/feed/eu-cent.ini
+  #     - INI_SECT=api
+  #   ports:
+  #     - "8382:8080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://extract-eu-central:8080"]
+
+  # extract-oc-full:
+  #   extends:
+  #     service: extract
+  #   environment:
+  #     - INI_PATH=/app/ext/conf/feed/oc-full.ini
+  #     - INI_SECT=api
+  #   ports:
+  #     - "8481:8080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://extract-oc-full:8080"]
+
+  extract-as-full:
+    extends:
+      service: extract
+    environment:
+      - INI_PATH=/app/ext/conf/feed/as-full.ini
+      - INI_SECT=api
+    ports:
+      - "8581:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://extract-as-full:8080"]
+
+  # subset-us-east:
+  #   extends:
+  #     service: subset
+  #   environment:
+  #     - URL_DATA=http://extract-us-east:8080/extract
+  #   ports:
+  #     - "7181:7080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://subset-us-east:7080"]
+  #   depends_on:
+  #     extract-us-east:
+  #       condition: service_healthy
+
+  # subset-us-west:
+  #   extends:
+  #     service: subset
+  #   environment:
+  #     - URL_DATA=http://extract-us-west:8080/extract
+  #   ports:
+  #     - "7182:7080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://subset-us-west:7080"]
+  #   depends_on:
+  #     extract-us-west:
+  #       condition: service_healthy
+
+  # subset-us-south:
+  #   extends:
+  #     service: subset
+  #   environment:
+  #     - URL_DATA=http://extract-us-south:8080/extract
+  #   ports:
+  #     - "7183:7080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://subset-us-south:7080"]
+  #   depends_on:
+  #     extract-us-south:
+  #       condition: service_healthy
+
+  # subset-us-central:
+  #   extends:
+  #     service: subset
+  #   environment:
+  #     - URL_DATA=http://extract-us-central:8080/extract
+  #   ports:
+  #     - "7184:7080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://subset-us-central:7080"]
+  #   depends_on:
+  #     extract-us-central:
+  #       condition: service_healthy
+
+  # subset-us-mountain:
+  #   extends:
+  #     service: subset
+  #   environment:
+  #     - URL_DATA=http://extract-us-mountain:8080/extract
+  #   ports:
+  #     - "7185:7080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://subset-us-mountain:7080"]
+  #   depends_on:
+  #     extract-us-mountain:
+  #       condition: service_healthy
+
+  # subset-ca-east:
+  #   extends:
+  #     service: subset
+  #   environment:
+  #     - URL_DATA=http://extract-ca-east:8080/extract
+  #   ports:
+  #     - "7281:7080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://subset-ca-east:7080"]
+  #   depends_on:
+  #     extract-ca-east:
+  #       condition: service_healthy
+
+  # subset-ca-west:
+  #   extends:
+  #     service: subset
+  #   environment:
+  #     - URL_DATA=http://extract-ca-west:8080/extract
+  #   ports:
+  #     - "7282:7080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://subset-ca-west:7080"]
+  #   depends_on:
+  #     extract-ca-west:
+  #       condition: service_healthy
+
+  # subset-eu-west:
+  #   extends:
+  #     service: subset
+  #   environment:
+  #     - URL_DATA=http://extract-eu-west:8080/extract
+  #   ports:
+  #     - "7381:7080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://subset-eu-west:7080"]
+  #   depends_on:
+  #     extract-eu-west:
+  #       condition: service_healthy
+
+  # subset-eu-central:
+  #   extends:
+  #     service: subset
+  #   environment:
+  #     - URL_DATA=http://extract-eu-central:8080/extract
+  #   ports:
+  #     - "7382:7080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://subset-eu-central:7080"]
+  #   depends_on:
+  #     extract-eu-central:
+  #       condition: service_healthy
+
+  # subset-oc-full:
+  #   extends:
+  #     service: subset
+  #   environment:
+  #     - URL_DATA=http://extract-oc-full:8080/extract
+  #   ports:
+  #     - "7481:7080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://subset-oc-full:7080"]
+  #   depends_on:
+  #     extract-oc-full:
+  #       condition: service_healthy
+
+  subset-as-full:
+    extends:
+      service: subset
+    environment:
+      - URL_DATA=http://extract-as-full:8080/extract
+    ports:
+      - "7581:7080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://subset-as-full:7080"]
+    depends_on:
+      extract-as-full:
         condition: service_healthy
 
-volumes:
-  store:
-    driver: local
+# volumes:
+#   store:
+#     driver: local
+
+# networks:
+#   dashboard:
+#     driver: bridge
