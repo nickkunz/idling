@@ -10,7 +10,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ## install dependencies
 RUN apt-get update &&\
     apt-get upgrade -y &&\
-    apt-get install -y curl
+    apt-get install -y curl software-properties-common
 RUN apt-get install -y --no-install-recommends --fix-missing\
     python3-pip
 
