@@ -1,2 +1,4 @@
 #!/bin/sh
-python3 -u ./wrt/src/write.py
+set -e
+/etc/init.d/nginx start
+gunicorn -c /etc/gunicorn/gunicorn.conf.py wrt.app:app

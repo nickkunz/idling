@@ -12,7 +12,9 @@ RUN apt-get update &&\
     apt-get upgrade -y &&\
     apt-get install -y curl software-properties-common
 RUN apt-get install -y --no-install-recommends --fix-missing\
-    python3-pip
+    python3-pip\
+    gunicorn\
+    nginx
 
 ## upgrade pip
 RUN pip3 install --upgrade --no-cache-dir pip
@@ -22,18 +24,32 @@ RUN apt-get autoremove -y &&\
     apt-get clean &&\
     rm -rf /var/lib/apt/lists/*
 
+## remove server default configs
+RUN rm /etc/nginx/nginx.conf &&\
+    rm /etc/nginx/sites-enabled/default
+
+## copy server and wsgi configs
+COPY ./wrt/conf/nginx.conf /etc/nginx/
+COPY ./wrt/conf/gunicorn.conf.py /etc/gunicorn/
+
+## symlink server configs
+RUN ln -s /etc/nginx/sites-available/nginx.conf /etc/nginx/sites-enabled/
+
 ## create non-root user and permissions
 RUN groupadd -g 999 group &&\
-    useradd -u 999 -g group -d /home/user -m -s /bin/bash user
+    useradd -u 999 -g group -d /home/user -m -s /bin/bash user &&\
+    chown -R user:group /var/lib/nginx /var/log/nginx /etc/nginx /run /etc/gunicorn/
 
-## set working directory
-WORKDIR /scp
+WORKDIR /app
 
 ## copy script
-COPY . /scp
+COPY . /app
 
 ## install libraires
 RUN pip3 install -r ./wrt/requirements.txt
+
+## open port
+EXPOSE 6080
 
 ## run non-root user
 USER user
