@@ -8,6 +8,7 @@ WITH j AS (
     AND longitude = %s
     ORDER BY duration DESC
     LIMIT 1
+    FOR UPDATE
 )
 INSERT INTO events (
     iata_id,

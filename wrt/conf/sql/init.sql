@@ -1,6 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS postgis_topology;
-
 CREATE TABLE IF NOT EXISTS agency (
     iata_id VARCHAR(255),
     agency VARCHAR(255),
