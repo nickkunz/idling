@@ -1,4 +1,6 @@
 .env
 .venv
 .vscode
-README.md
+ext/.env
+sub/.env
+wrt/.env

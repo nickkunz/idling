@@ -1,3 +1,6 @@
+.env
 .venv
 .vscode
-README.md
+ext/.env.sample
+ext/.env.sample
+ext/.env.sample
