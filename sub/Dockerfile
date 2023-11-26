@@ -7,9 +7,6 @@ ARG DOCKER_CONTENT_TRUST=1
 ## suppress dialog
 ARG DEBIAN_FRONTEND=noninteractive
 
-## default log level
-ENV LOG_LEVEL=INFO
-
 ## install dependencies
 RUN apt-get update &&\
     apt-get upgrade -y &&\
@@ -41,7 +38,7 @@ RUN ln -s /etc/nginx/sites-available/nginx.conf /etc/nginx/sites-enabled/
 ## create non-root user and permissions
 RUN groupadd -g 999 group &&\
     useradd -u 999 -g group -d /home/user -m -s /bin/bash user &&\
-    chown -R user:group /var/lib/nginx /var/log/nginx /etc/nginx /run
+    chown -R user:group /var/lib/nginx /var/log/nginx /etc/nginx /run /etc/gunicorn/
 
 ## set working directory
 WORKDIR /app

@@ -1,30 +1,40 @@
 ## libraries
 import os
 import sys
+import logging
 import threading
 from flask import Flask, Response
 from flask_socketio import SocketIO
 
-## modules
+## source
 sys.path.insert(0, './')
 from .src.subset import find_idle
 
 ## params
-URL_DATA = str(os.getenv('URL_DATA'))
-R_PARAM = int(os.getenv('R_PARAM'))
-H_PARAM = int(os.getenv('H_PARAM'))
-M_PARAM = int(os.getenv('M_PARAM'))
+PB_DATA = str(os.getenv(key = 'PB_DATA', default = 'http://extract:8080/extract'))
+R_PARAM = int(os.getenv(key = 'R_PARAM', default = 30))  ## request rate (seconds)
+H_PARAM = int(os.getenv(key = 'H_PARAM', default = 1))  ## time-horizon (interval)
+M_PARAM = int(os.getenv(key = 'M_PARAM', default = 10))  ## append limit (constant)
+LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
 
-## app and websocket
-app = Flask(__name__)
+## app
+app = Flask(import_name = __name__)
+
+## logging
+app.logger.propagate = False
+app.logger.setLevel(level = LOG_LEVEL)
+app.debug = True if LOG_LEVEL == 'DEBUG' else False
+
+## websocket
 sio = SocketIO(
     app = app,
     cors_allowed_origins = '*'
 )
 
-## test route
+## test app
 @app.route(rule = '/', methods = ['GET'])
 def test():
+    app.logger.info(msg = 'Client application layer tested sucessfully.')
     return Response(
         response = None,
         status = 200
@@ -32,26 +42,26 @@ def test():
 
 ## buffer and subset
 def subset(sio = sio):
-    for i in find_idle(  ## iter thro generator
-        url = URL_DATA,
+    app.logger.info(msg = 'Client application layer started sucessful.')
+    for i in find_idle(  ## iter thro gen obj
+        url = PB_DATA,
         time_r = R_PARAM,
         time_h = H_PARAM,
-        move_m = M_PARAM,
+        move_m = M_PARAM
         ):
 
-        # emit data to client thro websocket
+        ## client data stream
         sio.emit(
-            event = 'idle',  ## listen for events titled "idle"
-            data = i,
+            event = 'events',  ## listen for event titled "events"
+            data = i  ## send data
         )
 
 ## process thread
-threading.Thread(target = lambda: subset(sio = sio)).start()
+thread = threading.Thread(target = lambda: subset(sio = sio))
+thread.start()
 
 ## run app (does not execute with gunicorn)
 # if __name__ == '__main__':
-#     app.run(
-#         debug = LocalEnv.DEBUG,
-#         host = LocalEnv.URL,
-#         port = 8000
-#     )
+#     app.run()
+
+## end application
