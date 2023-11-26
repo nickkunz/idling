@@ -1,27 +1,32 @@
 ## libraries
 import os
-import sys
+import ssl
 import logging
 import aiohttp
 import asyncio
+import selectors
 import configparser
+from datetime import datetime
 from dotenv import load_dotenv
 from google.transit import gtfs_realtime_pb2
 
-## modules
-sys.path.insert(0, './')
-
 ## params
-LOG_LEVEL = str(os.getenv('LOG_LEVEL', 'INFO'))
+LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
 
-## logging config
-logging.basicConfig(
-    level = LOG_LEVEL,
-    format = '%(asctime)s - %(levelname)s - %(message)s'
-)
+## logging
+fmt = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+hdlr = logging.StreamHandler()
+hdlr.setFormatter(fmt = fmt)
+logging.basicConfig(level = LOG_LEVEL, handlers = [hdlr])
+logger = logging.getLogger(name = __name__)
+logger.propagate = True
 
-## fix for selectors bug
-import selectors
+## ssl certs
+ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+ssl_context.check_hostname = True
+ssl_context.verify_mode = ssl.CERT_REQUIRED
+
+## selectors bug fix
 selectors._PollLikeSelector.modify = (selectors._BaseSelectorImpl.modify)
 
 ## ini section keys
@@ -97,10 +102,9 @@ def env_var(file):
 
     return vars
 
-## extract data from source
-class ExtractData():
+## client to extract data
+class ExtractClient():
     def __init__(self, env_file, ini_file, ini_sect):
-
         """
         Desc:
             Extracts GTFS Realtime feeds from specified transit agency REST API endpoints.
@@ -123,11 +127,11 @@ class ExtractData():
 
         ## arg check
         if not isinstance(env_file, str):
-            raise TypeError("env_file arg must be a string")
+            raise TypeError('env_file arg must be a string')
         if not isinstance(ini_file, str):
-            raise TypeError("ini_file arg must be a string")
+            raise TypeError('ini_file arg must be a string')
         if not isinstance(ini_sect, str):
-            raise TypeError("ini_sect arg must be a string")
+            raise TypeError('ini_sect arg must be a string')
 
         self.env_file = env_file
         self.ini_file = ini_file
@@ -147,35 +151,46 @@ class ExtractData():
 
     ## toggle between two api keys
     def alt_key(self, url, keys):
-        if url not in self.key_last:
-            self.key_last[url] = keys[0]  ## default first key
+        second = datetime.now().second
+        key = keys[second % len(keys)]
 
-        ## alternating logic
-        key_a = self.key_last[url]
-        key_b = keys[1] if key_a == keys[0] else keys[0]
-        self.key_last[url] = key_b
-        return key_b
-
+        logging.debug('Client used API key {x} for URL {y}'.format(
+            x = hash(key),  ## log a hash of the key for security
+            y = url
+            )
+        )
+        return key
+    
     ## extract data
-    async def ext_dat(self):
+    async def run(self):
+        connector = aiohttp.TCPConnector(
+            ssl = ssl_context if 'https' in self.urls else False,
+            keepalive_timeout = 125
+        )
 
-        ## create session
+        ## stop auto headers
+        skip_auto_headers = {
+            aiohttp.hdrs.USER_AGENT,
+            aiohttp.hdrs.ACCEPT_ENCODING, 
+            aiohttp.hdrs.HOST
+        }
         headers_master = {
-            'User-Agent': 'GRD-TRT-BUF-4I/1.0',
+            'User-Agent': 'GRD-TRT-BUF-4I/0.0.1',
             'Accept': '*/*',
             'Accept-Encoding': 'gzip, deflate, br',
             'Connection': 'keep-alive',
             'Cache-Control': 'no-cache'
         }
-        connector = aiohttp.TCPConnector(
-            ssl = True if 'https' in self.urls else False
-        )
+
+        ## create session
         async with aiohttp.ClientSession(
             connector = connector,
+            loop = asyncio.get_event_loop(),
+            skip_auto_headers = skip_auto_headers,
             trust_env = True
             ) as session:
 
-            ## add auth headers for cities
+            ## add headers and params for selected endpoints
             connection = list()
             for i, url in self.urls.items():
                 headers = headers_master.copy()
@@ -273,18 +288,17 @@ class ExtractData():
                     )
                 ## dublin
                 elif i == 'API_END_DUB':
-                    keys = [self.keys['API_KEY_DUB_A'], self.keys['API_KEY_DUB_B']]
-                    key = self.alt_key(  ## toggle api keys
+                    keys = (self.keys['API_KEY_DUB_A'], self.keys['API_KEY_DUB_B'])
+                    headers['x-api-key'] = self.alt_key(  ## toggle api keys
                         url = url,
                         keys = keys
                     )
-                    headers['x-api-key'] = key
                     connection.append(
                         session.get(
-                            url=url,
-                            headers=headers
+                            url = url,
+                            headers = headers
+                            )
                         )
-                    )
                 ## sydney
                 elif i == 'API_END_SYD':
                     headers['Authorization'] = 'apikey' + ' ' + self.keys['API_KEY_SYD']
@@ -323,7 +337,7 @@ class ExtractData():
                             params = params
                         )
                     )
-                ## other cities without auth headers
+                ## other cities without headers and params
                 else:
                     connection.append(
                         session.get(
@@ -332,41 +346,104 @@ class ExtractData():
                         )
                     )
 
-            ## log request headers before sending requests
-            logging.debug(f"Request headers for ({url}): {headers}")
+                ## log request headers before sending requests
+                logging.debug('Request headers for {x}: {y}'.format(
+                        x = url,
+                        y = headers
+                    )
+                )
 
             ## join requests and process responses
-            response = await asyncio.gather(*connection)
+            response = await asyncio.gather(*connection, return_exceptions = True)
             feeds = bytes()
             for url, k in enumerate(response):
 
                 ## log response status
                 url_log = list(self.urls.values())[url]
+                content = None
+
+                ## failed request
                 if isinstance(k, Exception):
-                    logging.error(
-                        msg = f"GET request to {url_log} failed with exception: {k}"
-                    )
-                    continue
-                if k.status != 200:
+                    if k.status is not None:
+                        logging.error(
+                            msg = 'GET request to {x} failed with exception: {y}'.format(
+                                x = url_log,
+                                y = k.status
+                            )
+                        )
+                    elif k.status is None:
+                        logging.error(
+                            msg = 'GET request to {x} failed with unknown exception.'.format(
+                                x = url_log
+                            )
+                        )
+                    continue ## proceeds to next url upon exception
+
+                ## exceeded rate limit response
+                elif k.status == 429:
+                    t_retry = int(k.headers.get('Retry-After', 0))
                     logging.warning(
-                        msg = f"GET request to {url_log} unsuccessful with HTTP status code {k.status}."
+                        msg = 'GET request to {x} rate limited with HTTP status code {y}. Retry after {t} seconds.'.format(
+                            x = url_log,
+                            y = k.status,
+                            t = t_retry
+                        )
+                    )
+                    continue  # proceeds to next url upon exception
+
+                ## other unsuccessful response
+                elif k.status != 200:
+                    logging.warning(
+                        msg = 'GET request to {x} unsuccessful with HTTP status code {y}.'.format(
+                            x = url_log,
+                            y = k.status
+                        )
                     )
                     continue  ## proceeds to next url upon exception
+
+                ## successful response
                 else:
-                    logging.info(
-                        msg = f"GET request to {url_log} successful with HTTP status code {k.status}."
+                    logging.debug(
+                        msg = 'GET request to {x} successful with HTTP status code {y}.'.format(
+                            x = url_log,
+                            y = k.status
+                        )
                     )
-                    content = await k.content.read()
+                    content = await k.content.read()  ## bytes data type
 
                 ## parse protobuf
                 message = gtfs_realtime_pb2.FeedMessage()
-                message.ParseFromString(bytes(content))
+                if content is not None:
+                    try:
+                        message.ParseFromString(bytes(content))  ## force bytes data type
+                        logging.debug(
+                            msg = 'Protobuf parsing successful for {x}.'.format(
+                                x = url_log
+                            )
+                        )
+                    except Exception as e:
+                        logging.error(
+                            msg = 'Protobuf parsing error: {x}'.format(
+                                x = e
+                            )
+                        )
+                        continue
+
+                ## unsuccessful protobuf response, http status, headers (strict order)
+                else:
+                    logging.warning(msg = 'No protobuf response to parse.')
+                    return None, 202, {
+                        'Content-Type': 'application/x-protobuf',
+                        'Content-Length': 0,
+                        'Connection': 'keep-alive'
+                    }
 
                 # validate message header
                 if (message.header.gtfs_realtime_version == '2.0' or \
                     message.header.gtfs_realtime_version == '1.0') and \
                     message.header.incrementality == gtfs_realtime_pb2.FeedHeader.FULL_DATASET:
 
+                    ## validate entity
                     valid_entity = [j for j in message.entity if (
                         j.vehicle.vehicle.id and \
                         j.vehicle.timestamp and \
@@ -379,13 +456,18 @@ class ExtractData():
                     for j in valid_entity:
                         j.vehicle.vehicle.label = url_key.upper()[-3:]
 
-                    ## end message validation
+                    ## final message validation
                     del message.entity[:]
                     message.entity.extend(valid_entity)
+                    logging.debug(
+                        msg = 'Protobuf validation successful for {x}.'.format(
+                            x = url_log
+                        )
+                    )
 
                     ## serialize message, append to feed, update content length
                     feeds += message.SerializeToString()
-                    content_length = len(feeds)
+                    content_length = len(feeds) if feeds else 0
 
             ## successful protobuf response, http status, headers (strict order)
             return feeds, 200, {
