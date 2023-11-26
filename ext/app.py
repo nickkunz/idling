@@ -3,38 +3,45 @@ import os
 import sys
 from quart import Quart, Response
 
-## modules
+## source
 sys.path.insert(0, './')
-from .src.extract import ExtractData
+from .src.extract import ExtractClient
 
 ## params
-ENV_FILE = './ext/.env'
-INI_FILE = str(os.getenv('INI_PATH'))
-INI_SECT = str(os.getenv('INI_SECT'))
-LOG_LEVEL = str(os.getenv('LOG_LEVEL', 'INFO'))
+INI_FILE = str(os.getenv(key = 'INI_PATH', default = '/app/ext/conf/feed/ww-full.ini'))
+INI_SECT = str(os.getenv(key = 'INI_SECT', default = 'api'))
+ENV_FILE = str(os.getenv(key = 'ENV_FILE', default = './ext/.env'))
+LOG_LEVEL = str(os.getenv(key = 'LOG_LEVEL', default = 'INFO'))
 
 ## app
-app = Quart(__name__)
-app.debug = False
-app.logger.setLevel(LOG_LEVEL)
+app = Quart(import_name = __name__)
 
-## test route
+## logging
+app.logger.propagate = False
+app.logger.setLevel(level = LOG_LEVEL)
+app.debug = True if LOG_LEVEL == 'DEBUG' else False
+
+## client instance
+client = ExtractClient(
+    env_file = ENV_FILE,
+    ini_file = INI_FILE,
+    ini_sect = INI_SECT
+)
+
+## test app
 @app.route(rule = '/', methods = ['GET'])
 def test():
+    app.logger.info(msg = 'Client application layer tested sucessfully.')
     return Response(
         response = None,
         status = 200
     )
 
-## extract source data
+## extract data
 @app.route(rule = '/extract', methods = ['GET'])
 async def extract():
-    response, status, headers = await ExtractData(
-        env_file = ENV_FILE,
-        ini_file = INI_FILE,
-        ini_sect = INI_SECT
-    ).ext_dat()
-
+    response, status, headers = await client.run()
+    app.logger.info(msg = 'Client application layer executed sucessfully.')
     return Response(
         response = response,
         status = status,
@@ -43,8 +50,6 @@ async def extract():
 
 ## run app (does not execute with gunicorn)
 # if __name__ == '__main__':
-#     app.run(
-#         debug = LocalEnv.DEBUG,
-#         host = LocalEnv.URL,
-#         port = 8000
-#     )
+#     app.run()
+
+## end application
