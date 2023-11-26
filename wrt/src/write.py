@@ -14,10 +14,7 @@ LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
 fmt = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 hdlr = logging.StreamHandler()
 hdlr.setFormatter(fmt = fmt)
-
-logging.getLogger().addHandler(hdlr = hdlr)
-logging.basicConfig(level = LOG_LEVEL)
-
+logging.basicConfig(level = LOG_LEVEL, handlers = [hdlr])
 logger = logging.getLogger(name = __name__)
 logger.propagate = True
 
@@ -89,11 +86,11 @@ class WriteClient():
         
         ## check for existing tables
         self.cursor = self.connect.cursor()
-        self.cursor.execute("SELECT to_regclass('idle.agency')")
-
+        self.cursor.execute("SELECT to_regclass('public.agency')")
         if self.cursor.fetchone()[0] is not None:
             logger.info(msg = 'Database has already been initialized.')
 
+        ## init first run
         else:
             query = self.db_read(path = self.sql_init) ## init query file path
             self.cursor = self.connect.cursor()
@@ -165,11 +162,12 @@ class WriteClient():
             ## insert events into table
             try:
                 with self.lock:
+                    cursor = self.connect.cursor()  # create a new cursor for each thread
                     for i in data:
                         query = self.db_read(path = self.sql_events)
                         logger.debug('Client successfully read SQL query.')
 
-                        self.cursor.execute(
+                        cursor.execute(
                             query = query,
                             vars = (
                                 str(i['iata_id']),
@@ -222,7 +220,6 @@ class WriteClient():
                         wait_timeout = self.recon_timeo
                     )
                     if self.sio.connected:
-                        logger.info(msg = 'Client successfully connected to websocket server.')
                         break
                 except Exception as e:
                     logger.warning(msg = 'Client failed to connect to websocket server. Reconnection attempt {x} of {y}: {z}.'.format(
@@ -235,7 +232,8 @@ class WriteClient():
                 logger.error(msg = 'Client failed to connect to websocket server. Max number of reconnection attempts.')
 
         ## start websocket thread
-        threading.Thread(target = ws_thrd).start()
+        self.ws_thread = threading.Thread(target = ws_thrd)
+        self.ws_thread.start()
 
     ## close client
     def close(self):
@@ -264,6 +262,11 @@ class WriteClient():
                     )
                 )
 
+        ## stop any active threads
+        if hasattr(self, 'ws_thread') and self.ws_thread.is_alive():
+            self.ws_thread.join()
+            logger.info('Websocket thread stopped.')
+
     ## run client
     def run(self):
         try:
@@ -273,10 +276,10 @@ class WriteClient():
             self.ws_conn()  ## connect to websocket
 
         except Exception as e:
+            self.close()  ## clean resources
             logger.error('Client encountered an error while running: {x}.'.format(
                 x = e
                 )
             )
-            self.close()  ## clean resources
 
 ## end program
