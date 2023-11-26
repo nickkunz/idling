@@ -9,9 +9,6 @@ services:
     build:
       context: .
       dockerfile: ./ext/Dockerfile
-    environment:
-      INI_PATH: /app/ext/conf/feed/ww-full.ini
-      INI_SECT: api
     ports:
       - "8080:8080"
     user: user
@@ -30,81 +27,78 @@ services:
       retries: 3
     restart: always
 
-  subset:
-    build:
-      context: .
-      dockerfile: ./sub/Dockerfile
-    environment:
-      PB_DATA: http://extract:8080/extract
-    ports:
-      - "7080:7080"
-    user: user
-    cap_drop:
-      - ALL
-      - SETUID
-      - SETGID
-    security_opt:
-      - no-new-privileges:true
-    mem_limit: 1024M
-    mem_reservation: 512M
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://subset:7080/"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    restart: always
-    depends_on:
-      extract:
-        condition: service_healthy
+  # subset:
+  #   build:
+  #     context: .
+  #     dockerfile: ./sub/Dockerfile
+  #   ports:
+  #     - "7080:7080"
+  #   user: user
+  #   cap_drop:
+  #     - ALL
+  #     - SETUID
+  #     - SETGID
+  #   security_opt:
+  #     - no-new-privileges:true
+  #   mem_limit: 1024M
+  #   mem_reservation: 512M
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-sf", "http://subset:7080/"]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #   restart: always
+  #   depends_on:
+  #     extract:
+  #       condition: service_healthy
 
-  write:
-    build:
-      context: .
-      dockerfile: ./wrt/Dockerfile
-    environment:
-      WS_HOST: http://subset:7080/
-      DB_NAME: idle
-      DB_USER: user
-      DB_PASS: pass
-    ports:
-      - "6080:6080"
-    user: user
-    cap_drop:
-      - ALL
-      - SETUID
-      - SETGID
-    security_opt:
-      - no-new-privileges:true
-    mem_limit: 1024M
-    mem_reservation: 512M
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://write:6080/"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    restart: always
-    depends_on:
-      subset:
-        condition: service_healthy
-      database:
-        condition: service_healthy
+  # write:
+  #   build:
+  #     context: .
+  #     dockerfile: ./wrt/Dockerfile
+  #   environment:
+  #     DB_NAME: idle
+  #     DB_USER: user
+  #     DB_PASS: pass
+  #   ports:
+  #     - "6080:6080"
+  #   user: user
+  #   cap_drop:
+  #     - ALL
+  #     - SETUID
+  #     - SETGID
+  #   security_opt:
+  #     - no-new-privileges:true
+  #   mem_limit: 1024M
+  #   mem_reservation: 512M
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-sf", "http://write:6080/"]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #   restart: always
+  #   depends_on:
+  #     subset:
+  #       condition: service_healthy
+  #     database:
+  #       condition: service_healthy
 
-  database:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: idle
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-    ports:
-      - "5432:5432"
-    security_opt:
-      - no-new-privileges:true
-    volumes:
-      - store:/var/lib/postgresql/data
-      - ./wrt/conf/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "user", "-d", "idle"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
-    restart: always
+  # database:
+  #   image: postgres:16
+  #   environment:
+  #     POSTGRES_DB: idle
+  #     POSTGRES_USER: user
+  #     POSTGRES_PASSWORD: pass
+  #   ports:
+  #     - "5432:5432"
+  #   security_opt:
+  #     - no-new-privileges:true
+  #   volumes:
+  #     - store:/var/lib/postgresql/data
+  #     - ./wrt/conf/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   healthcheck:
+  #     test: ["CMD", "pg_isready", "-U", "user", "-d", "idle"]
+  #     interval: 60s
+  #     timeout: 10s
+  #     retries: 3
+  #   restart: always
