@@ -9,10 +9,7 @@ sys.path.insert(0, './')
 from .src.write import WriteClient
 
 ## params
-WS_HOST = str(os.getenv(key = 'WS_HOST'))
-if WS_HOST is None:
-    raise ValueError('Missing environment variable: WS_HOST.')
-
+WS_HOST = str(os.getenv(key = 'WS_HOST', default = 'http://subset:7080'))
 DB_NAME = str(os.getenv(key = 'DB_NAME', default = 'idle'))
 DB_USER = str(os.getenv(key = 'DB_USER', default = 'user'))
 DB_PASS = str(os.getenv(key = 'DB_PASS', default = 'pass'))
@@ -27,8 +24,8 @@ LOG_LEVEL = str(os.getenv(key = 'LOG_LEVEL', default = 'INFO'))
 app = Flask(import_name = __name__)
 
 ## logging
-app.logger.setLevel(level = LOG_LEVEL)
 app.logger.propagate = False
+app.logger.setLevel(level = LOG_LEVEL)
 app.debug = True if LOG_LEVEL == 'DEBUG' else False
 
 ##client instance

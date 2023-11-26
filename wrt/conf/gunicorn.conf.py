@@ -1,6 +1,5 @@
 ## library
 import os
-from multiprocessing import cpu_count
 
 ## params
 LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
@@ -9,8 +8,8 @@ LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
 bind = "127.0.0.1:8000"
 
 ## workers (outbound traffic)
-workers = cpu_count()
-threads = workers * 2
+workers = 1  ## one request at a time
+threads = 1
 
 ## timeouts
 timeout = 30

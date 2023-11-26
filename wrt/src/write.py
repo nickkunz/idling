@@ -98,11 +98,11 @@ class WriteClient():
             self.connect.commit()
             logger.info(msg = 'Client successfully initialized database.')
 
-            ## create transit agency table
-            query = self.db_read(path = self.sql_agency)  ## agency query file path
-            self.cursor.execute(query = query)
-            self.connect.commit()
-            logger.info(msg = 'Client successfully created agency table.')
+        ## create transit agency table
+        query = self.db_read(path = self.sql_agency)  ## agency query file path
+        self.cursor.execute(query = query)
+        self.connect.commit()
+        logger.info(msg = 'Client successfully created agency table.')
 
     ## initialize websocket
     def ws_init(self):
@@ -153,11 +153,11 @@ class WriteClient():
             try:
                 data = json.loads(json_data)
                 if len(data) == 0:
-                    logger.warning('Client received empty websocket response.')
+                    logger.warning(msg = 'Client received empty websocket response.')
                     return
 
             except Exception as e:
-                logger.error('Client failed to parse websocket response.')
+                logger.error(msg = 'Client failed to parse websocket response.')
 
             ## insert events into table
             try:
@@ -165,7 +165,7 @@ class WriteClient():
                     cursor = self.connect.cursor()  # create a new cursor for each thread
                     for i in data:
                         query = self.db_read(path = self.sql_events)
-                        logger.debug('Client successfully read SQL query.')
+                        logger.debug(msg = 'Client successfully read SQL query.')
 
                         cursor.execute(
                             query = query,
@@ -191,6 +191,7 @@ class WriteClient():
                     ## save changes to database
                     self.connect.commit()
                     logger.info(msg = 'Client successfully wrote to database.')
+                    time.sleep(0.1)  ## patch for packet queue is empty error
 
             ## undo insert attempt
             except psycopg2.extensions.TransactionRollbackError as e:
@@ -203,11 +204,11 @@ class WriteClient():
     ## connect to websocket
     def ws_conn(self):
         if hasattr(self, 'sio') and self.sio.connected:
-            logger.info('Client is already connected to websocket server.')
+            logger.info(msg = 'Client is already connected to websocket server.')
             return
 
         if self.ws_host == None:
-            logger.error('Client has no websocket server specified.')
+            logger.error(msg = 'Client has no websocket server specified.')
             raise Exception('Client has no websocket server specified.')
 
         ## return immediately if the websocket connection cannot be established
@@ -222,11 +223,13 @@ class WriteClient():
                     if self.sio.connected:
                         break
                 except Exception as e:
-                    logger.warning(msg = 'Client failed to connect to websocket server. Reconnection attempt {x} of {y}: {z}.'.format(
-                        x = i + 1,
-                        y = self.recon_tries,
-                        z = e
-                    ))
+                    logger.warning(
+                        msg = 'Client failed to connect to websocket server. Reconnection attempt {x} of {y}: {z}.'.format(
+                            x = i + 1,
+                            y = self.recon_tries,
+                            z = e
+                            )
+                        )
                     time.sleep(self.recon_delay)
             else:
                 logger.error(msg = 'Client failed to connect to websocket server. Max number of reconnection attempts.')
@@ -243,7 +246,7 @@ class WriteClient():
             try:
                 if self.connect.closed == 0:
                     self.connect.close()
-                    logger.info('Database connection closed.')
+                    logger.info(msg = 'Database connection closed.')
             except Exception as e:
                 logger.error(msg = 'Error closing database connection: {x}'.format(
                     x = e
@@ -255,9 +258,9 @@ class WriteClient():
             try:
                 if self.sio.connected:
                     self.sio.disconnect()
-                    logger.info('Disconnected from websocket.')
+                    logger.info(msg = 'Disconnected from websocket.')
             except Exception as e:
-                logger.error('Error disconnecting Websocket client: {x}'.format(
+                logger.error(msg = 'Error disconnecting Websocket client: {x}'.format(
                     x = e
                     )
                 )
@@ -265,7 +268,7 @@ class WriteClient():
         ## stop any active threads
         if hasattr(self, 'ws_thread') and self.ws_thread.is_alive():
             self.ws_thread.join()
-            logger.info('Websocket thread stopped.')
+            logger.info(msg = 'Websocket thread stopped.')
 
     ## run client
     def run(self):
