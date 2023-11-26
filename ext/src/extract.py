@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from google.transit import gtfs_realtime_pb2
 
 ## params
-LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
+LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'DEBUG')
 
 ## logging
 fmt = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -154,8 +154,8 @@ class ExtractClient():
         second = datetime.now().second
         key = keys[second % len(keys)]
 
-        logging.debug('Client used API key {x} for URL {y}'.format(
-            x = hash(key),  ## log a hash of the key for security
+        logging.debug(msg = 'Client used API key {x} for URL {y}'.format(
+            x = hash(key),  ## hash of the key for security
             y = url
             )
         )
@@ -258,12 +258,12 @@ class ExtractClient():
                     )
                 ## montreal
                 elif i == 'API_END_YUL':
-                    params = {'token': self.keys['API_KEY_YUL']}
+                    headers['apiKey'] = self.keys['API_KEY_YUL']
+                    headers['Accept'] = 'application/x-protobuf'  ## required to return protobufs
                     connection.append(
                         session.get(
                             url = url,
-                            headers = headers,
-                            params = params
+                            headers = headers
                         )
                     )
                 ## vancouver
@@ -444,8 +444,8 @@ class ExtractClient():
                     message.header.incrementality == gtfs_realtime_pb2.FeedHeader.FULL_DATASET:
 
                     ## validate entity
-                    valid_entity = [j for j in message.entity if (
-                        j.vehicle.vehicle.id and \
+                    entity_valid = [j for j in message.entity if (
+                        (j.vehicle.vehicle.id or (j.vehicle.vehicle.label and j.id)) and \
                         j.vehicle.timestamp and \
                         j.vehicle.position.latitude and \
                         j.vehicle.position.longitude and \
@@ -453,12 +453,14 @@ class ExtractClient():
                         )
                     ]
                     url_key = list(self.urls.keys())[url]
-                    for j in valid_entity:
-                        j.vehicle.vehicle.label = url_key.upper()[-3:]
+                    for j in entity_valid:
+                        if not j.vehicle.vehicle.id and j.vehicle.vehicle.label and j.id:
+                            j.vehicle.vehicle.id = j.id  ## reassign vehicle id with label
+                        j.vehicle.vehicle.label = url_key.upper()[-3:]  ## reassign vehicle label with iata code
 
                     ## final message validation
                     del message.entity[:]
-                    message.entity.extend(valid_entity)
+                    message.entity.extend(entity_valid)
                     logging.debug(
                         msg = 'Protobuf validation successful for {x}.'.format(
                             x = url_log

@@ -7,9 +7,6 @@ ARG DOCKER_CONTENT_TRUST=1
 ## suppress dialog
 ARG DEBIAN_FRONTEND=noninteractive
 
-## default log level
-ENV LOG_LEVEL=INFO
-
 ## install dependencies
 RUN apt-get update &&\
     apt-get upgrade -y &&\
@@ -39,10 +36,13 @@ COPY ./ext/conf/gunicorn.conf.py /etc/gunicorn/
 ## symlink server configs
 RUN ln -s /etc/nginx/sites-available/nginx.conf /etc/nginx/sites-enabled/
 
+## create cache directory
+RUN mkdir -p /var/cache/nginx/cache
+
 ## create non-root user and permissions
 RUN groupadd -g 999 group &&\
     useradd -u 999 -g group -d /home/user -m -s /bin/bash user &&\
-    chown -R user:group /var/lib/nginx /var/log/nginx /etc/nginx /run
+    chown -R user:group /var/lib/nginx /var/log/nginx /etc/nginx /run /var/cache/nginx/cache /etc/gunicorn/
 
 ## set working directory
 WORKDIR /app
