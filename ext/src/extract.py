@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from google.transit import gtfs_realtime_pb2
 
 ## params
-LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'DEBUG')
+LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
 
 ## logging
 fmt = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
