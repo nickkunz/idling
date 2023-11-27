@@ -1,8 +1,10 @@
 CREATE TABLE IF NOT EXISTS agency (
-    iata_id VARCHAR(255),
-    agency VARCHAR(255),
-    city VARCHAR(255),
-    country VARCHAR(255)
+    iata_id VARCHAR(255) PRIMARY KEY,
+    agency VARCHAR(255) UNIQUE,
+    city VARCHAR(255) UNIQUE,
+    country VARCHAR(255),
+    region VARCHAR(255),
+    continent VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS events (
