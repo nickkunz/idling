@@ -1,7 +1,6 @@
 ## libraries
 import os
 import sys
-import logging
 import threading
 from flask import Flask, Response
 from flask_socketio import SocketIO
