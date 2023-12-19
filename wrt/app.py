@@ -1,7 +1,7 @@
 ## libraries
 import os
 import sys
-from flask import Flask, Response
+from flask import Flask, Response, request, abort
 
 ## source
 sys.path.insert(0, './')
@@ -43,17 +43,18 @@ client = WriteClient(
 ## test app
 @app.route(rule = '/', methods = ['GET'])
 def test():
-    app.logger.info(msg = 'Client application layer tested sucessfully.')
-    return Response(
-        response = None,
-        status = 200
-    )
+    if request.args:
+        abort(code = 400, text = 'Application test does not accept parameters.')
+    app.logger.info(msg = 'Application layer tested sucessfully.')
+    return Response(response = None, status = 200)
 
 ## write websocket data to database
 @app.route(rule = '/write', methods = ['GET'])
 def write():
+    if request.args:
+        abort(code = 400, text = 'Application does not accept parameters.')
     client.run()
-    app.logger.info(msg = 'Client application layer started sucessfully.')
+    app.logger.info(msg = 'Application layer started sucessfully.')
     return Response(
         response = 'Write application started. Beginning to write to database.',
         status = 200
