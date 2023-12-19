@@ -4,6 +4,7 @@ import time
 import json
 import logging
 import threading
+import socket
 import socketio
 import psycopg2
 
@@ -88,7 +89,7 @@ class WriteClient():
         self.cursor = self.connect.cursor()
         self.cursor.execute("SELECT to_regclass('public.agency')")
         if self.cursor.fetchone()[0] is not None:
-            logger.info(msg = 'Database has already been initialized.')
+            logger.info(msg = 'Client already initialized database.')
 
         ## init first run
         else:
@@ -99,10 +100,12 @@ class WriteClient():
             logger.info(msg = 'Client successfully initialized database.')
 
         ## create transit agency table
-        query = self.db_read(path = self.sql_agency)  ## agency query file path
-        self.cursor.execute(query = query)
-        self.connect.commit()
-        logger.info(msg = 'Client successfully created agency table.')
+        self.cursor.execute("SELECT to_regclass('public.agency')")
+        if self.cursor.fetchone()[0] is None:
+            query = self.db_read(path = self.sql_agency)  ## agency query file path
+            self.cursor.execute(query = query)
+            self.connect.commit()
+            logger.info(msg = 'Client successfully created agency table.')
 
     ## initialize websocket
     def ws_init(self):
@@ -117,23 +120,26 @@ class WriteClient():
         ## websocket event handler
         @self.sio.event
         def connect():
-            logger.info(msg = 'Client successfully connected to {x}.'.format(
-                x = self.ws_host
+            logger.info(
+                msg = 'Client successfully connected to {x}.'.format(
+                    x = self.ws_host
                 )
             )
 
         @self.sio.event
-        def connect_error(err):
-            logger.error(msg = 'Client failed to connect to {x}: {y}.'.format(
-                x = self.ws_host,
-                y = err
+        def connect_error(data):  # Updated this line
+            logger.error(
+                msg = 'Client failed to connect to {x}: {y}'.format(  # Updated this line
+                    x = self.ws_host,
+                    y = data  # This is the error message passed by socketio
                 )
             )
 
         @self.sio.event
         def disconnect():
-            logger.warning(msg = 'Client disconnected from {x}.'.format(
-                x = self.ws_host
+            logger.warning(
+                msg = 'Client disconnected from {x}.'.format(
+                    x = self.ws_host
                 )
             )
 
@@ -162,7 +168,7 @@ class WriteClient():
             ## insert events into table
             try:
                 with self.lock:
-                    cursor = self.connect.cursor()  # create a new cursor for each thread
+                    cursor = self.connect.cursor()
                     for i in data:
                         query = self.db_read(path = self.sql_events)
                         logger.debug(msg = 'Client successfully read SQL query.')
@@ -196,76 +202,77 @@ class WriteClient():
             ## undo insert attempt
             except psycopg2.extensions.TransactionRollbackError as e:
                 self.connect.rollback()
-                logger.error(msg = 'Client failed to write to database: {x}.'.format(
-                    x = e
+                logger.error(
+                    msg = 'Client failed to write to database: {x}.'.format(
+                        x = e
                     )
                 )
+
+    ## return immediately if the websocket connection cannot be established
+    def ws_thrd(self):
+        for i in range(0, self.recon_tries):
+            try:
+                self.sio.connect(
+                    url = self.ws_host,
+                    transports = 'websocket',
+                    wait_timeout = self.recon_timeo
+                )
+                if self.sio.connected:
+                    break
+            except (Exception, socket.timeout) as e:
+                logger.warning(
+                    msg = 'Client failed to connect to websocket server. Reconnection attempt {x} of {y}: {z}.'.format(
+                        x = i + 1,
+                        y = self.recon_tries,
+                        z = e
+                    )
+                )
+                time.sleep(self.recon_delay)
+        else:
+            logger.error(msg = 'Client failed to connect to websocket server. Max number of reconnection attempts.')
 
     ## connect to websocket
     def ws_conn(self):
         if hasattr(self, 'sio') and self.sio.connected:
-            logger.info(msg = 'Client is already connected to websocket server.')
+            logger.info(msg = 'Client already connected to websocket server.')
             return
 
         if self.ws_host == None:
             logger.error(msg = 'Client has no websocket server specified.')
             raise Exception('Client has no websocket server specified.')
 
-        ## return immediately if the websocket connection cannot be established
-        def ws_thrd():
-            for i in range(0, self.recon_tries):
-                try:
-                    self.sio.connect(
-                        url = self.ws_host,
-                        transports = 'websocket',
-                        wait_timeout = self.recon_timeo
-                    )
-                    if self.sio.connected:
-                        break
-                except Exception as e:
-                    logger.warning(
-                        msg = 'Client failed to connect to websocket server. Reconnection attempt {x} of {y}: {z}.'.format(
-                            x = i + 1,
-                            y = self.recon_tries,
-                            z = e
-                            )
-                        )
-                    time.sleep(self.recon_delay)
-            else:
-                logger.error(msg = 'Client failed to connect to websocket server. Max number of reconnection attempts.')
-
         ## start websocket thread
-        self.ws_thread = threading.Thread(target = ws_thrd)
+        self.ws_thread = threading.Thread(target = self.ws_thrd)
         self.ws_thread.start()
 
-    ## close client
+    ## close database connection and websocket
     def close(self):
-
-        ## close database connection
-        if hasattr(self, 'connect') and self.connect is not None:
+        if hasattr(self, 'connect') and self.connect is not None: 
             try:
                 if self.connect.closed == 0:
                     self.connect.close()
                     logger.info(msg = 'Database connection closed.')
             except Exception as e:
-                logger.error(msg = 'Error closing database connection: {x}'.format(
-                    x = e
+                logger.error(
+                    msg = 'Error closing database connection: {x}'.format(
+                        x = e
                     )
                 )
 
-        ## disconnect the websocket
+        ## disconnect websocket
         if hasattr(self, 'sio') and self.sio is not None:
             try:
                 if self.sio.connected:
                     self.sio.disconnect()
                     logger.info(msg = 'Disconnected from websocket.')
             except Exception as e:
-                logger.error(msg = 'Error disconnecting Websocket client: {x}'.format(
-                    x = e
+                logger.error(
+                    msg = 'Error disconnecting Websocket client: {x}'.format(
+                        x = e
                     )
                 )
 
-        ## stop any active threads
+        ## stop active threads
         if hasattr(self, 'ws_thread') and self.ws_thread.is_alive():
             self.ws_thread.join()
             logger.info(msg = 'Websocket thread stopped.')
@@ -273,10 +280,10 @@ class WriteClient():
     ## run client
     def run(self):
         try:
-            self.db_conn()  ## connect to database
+            self.db_conn()  ## connect database
             self.db_init()  ## initialize database
             self.ws_init()  ## initialize websocket
-            self.ws_conn()  ## connect to websocket
+            self.ws_conn()  ## connect websocket
 
         except Exception as e:
             self.close()  ## clean resources
