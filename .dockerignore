@@ -1,6 +1,10 @@
-.env
-.venv
-.vscode
-ext/.env.sample
-ext/.env.sample
-ext/.env.sample
+*
+.*
+!ext/
+!gui/
+!rdb/
+!sub/
+!wrt/
+gui/node_modules
+gui/coverage
+gui/build
