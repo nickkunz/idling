@@ -9,6 +9,7 @@ import configparser
 from datetime import datetime
 from dotenv import load_dotenv
 from google.transit import gtfs_realtime_pb2
+from aiohttp import ClientPayloadError
 
 ## params
 LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
@@ -227,7 +228,7 @@ class ExtractClient():
                 elif i == 'API_END_SFO':
                     params = {
                         'api_key': self.keys['API_KEY_SFO'],
-                        'agency': 'SF'
+                        'agency': 'RG'
                     }
                     connection.append(
                         session.get(
@@ -409,7 +410,16 @@ class ExtractClient():
                             y = k.status
                         )
                     )
-                    content = await k.content.read()  ## bytes data type
+                    try:
+                        content = await k.content.read()  ## bytes data type
+
+                    ## payload error
+                    except ClientPayloadError as e:
+                        logging.error(
+                            msg = 'Client failed to read response content: {x}'.format(
+                                x = e
+                                )
+                            )
 
                 ## parse protobuf
                 message = gtfs_realtime_pb2.FeedMessage()
