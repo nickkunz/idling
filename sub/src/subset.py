@@ -80,10 +80,7 @@ def get_req_par(url, key = None):
         ## output message validation
         del message.entity[:]
         message.entity.extend(entity_valid)
-        logging.info(msg = 'Client successfully processed GET request from {x}.'.format(
-            x = url
-            )
-        )
+        logging.info(msg = 'Client successfully processed GET request.')
     return message.entity
 
 ## parse ids

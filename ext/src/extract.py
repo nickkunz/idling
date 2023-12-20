@@ -416,7 +416,7 @@ class ExtractClient():
                     ## payload error
                     except ClientPayloadError as e:
                         logging.error(
-                            msg = 'Client failed to read response content: {x}'.format(
+                            msg = '{x}'.format(
                                 x = e
                                 )
                             )
