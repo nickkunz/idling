@@ -365,42 +365,36 @@ class ExtractClient():
 
                 ## failed request
                 if isinstance(k, Exception):
-                    if k.status is not None:
-                        logging.error(
-                            msg = 'GET request to {x} failed with exception: {y}'.format(
-                                x = url_log,
-                                y = k.status
+                    if hasattr(k, 'status'):
+
+                        ## exceeded rate limit response
+                        if k.status == 429:
+                            t_retry = int(k.headers.get('Retry-After', 0))
+                            logging.warning(
+                                msg = 'GET request to {x} rate limited with HTTP status code {y}. Retry after {t} seconds.'.format(
+                                    x = url_log,
+                                    y = k.status,
+                                    t = t_retry
+                                )
                             )
-                        )
-                    elif k.status is None:
+                            continue  # proceeds to next url upon exception
+
+                        ## other unsuccessful response
+                        elif k.status != 200:
+                            logging.warning(
+                                msg = 'GET request to {x} unsuccessful with HTTP status code {y}.'.format(
+                                    x = url_log,
+                                    y = k.status
+                                )
+                            )
+                            continue  ## proceeds to next url upon exception
+                    else:
                         logging.error(
-                            msg = 'GET request to {x} failed with unknown exception.'.format(
+                            msg = 'GET request to {x} failed with unknown HTTP status.'.format(
                                 x = url_log
                             )
                         )
                     continue ## proceeds to next url upon exception
-
-                ## exceeded rate limit response
-                elif k.status == 429:
-                    t_retry = int(k.headers.get('Retry-After', 0))
-                    logging.warning(
-                        msg = 'GET request to {x} rate limited with HTTP status code {y}. Retry after {t} seconds.'.format(
-                            x = url_log,
-                            y = k.status,
-                            t = t_retry
-                        )
-                    )
-                    continue  # proceeds to next url upon exception
-
-                ## other unsuccessful response
-                elif k.status != 200:
-                    logging.warning(
-                        msg = 'GET request to {x} unsuccessful with HTTP status code {y}.'.format(
-                            x = url_log,
-                            y = k.status
-                        )
-                    )
-                    continue  ## proceeds to next url upon exception
 
                 ## successful response
                 else:
