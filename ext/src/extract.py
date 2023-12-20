@@ -410,7 +410,7 @@ class ExtractClient():
                     ## payload error
                     except ClientPayloadError as e:
                         logging.error(
-                            msg = '{x}'.format(
+                            msg = '{x}.'.format(
                                 x = e
                                 )
                             )
