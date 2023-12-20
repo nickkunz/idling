@@ -1,7 +1,8 @@
 ## libraries
 import os
 import sys
-from quart import Quart, Response
+from quart import Quart, Response, request, abort
+from aiohttp import ClientConnectorError
 
 ## source
 sys.path.insert(0, './')
@@ -31,17 +32,22 @@ client = ExtractClient(
 ## test app
 @app.route(rule = '/', methods = ['GET'])
 def test():
-    app.logger.info(msg = 'Client application layer tested sucessfully.')
-    return Response(
-        response = None,
-        status = 200
-    )
+    if request.args:
+        abort(code = 400, text = 'Application test does not accept parameters.')
+    app.logger.info(msg = 'Application layer tested sucessfully.')
+    return Response(response = None, status = 200)
 
 ## extract data
 @app.route(rule = '/extract', methods = ['GET'])
 async def extract():
-    response, status, headers = await client.run()
-    app.logger.info(msg = 'Client application layer executed sucessfully.')
+    if request.args:
+        abort(code = 400, text = 'Application does not accept parameters.')
+    try:
+        response, status, headers = await client.run()
+    except ClientConnectorError as e:
+        app.logger.error(msg = 'Application failed to connect: {x}'.format(x = e))
+        return Response(response = str(e), status = 500)
+    app.logger.info(msg = 'Application layer sucessfully executed.')
     return Response(
         response = response,
         status = status,
