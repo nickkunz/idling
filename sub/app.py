@@ -2,7 +2,7 @@
 import os
 import sys
 import threading
-from flask import Flask, Response
+from flask import Flask, Response, request, abort
 from flask_socketio import SocketIO
 
 ## source
@@ -33,15 +33,14 @@ sio = SocketIO(
 ## test app
 @app.route(rule = '/', methods = ['GET'])
 def test():
-    app.logger.info(msg = 'Client application layer tested sucessfully.')
-    return Response(
-        response = None,
-        status = 200
-    )
+    if request.args:
+        abort(code = 400, text = 'Application does not accept parameters.')
+    app.logger.info(msg = 'Application layer tested sucessfully.')
+    return Response(response = None, status = 200)
 
 ## buffer and subset
 def subset(sio = sio):
-    app.logger.info(msg = 'Client application layer started sucessful.')
+    app.logger.info(msg = 'Application layer started sucessful.')
     for i in find_idle(  ## iter thro gen obj
         url = PB_DATA,
         time_r = R_PARAM,
