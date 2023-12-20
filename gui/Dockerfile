@@ -10,14 +10,10 @@ ARG DEBIAN_FRONTEND=noninteractive
 ## install dependencies
 RUN apt-get update &&\
     apt-get upgrade -y &&\
-    apt-get install -y curl software-properties-common
-RUN apt-get install -y --no-install-recommends --fix-missing\
-    python3-pip\
-    gunicorn\
+    apt-get install -y curl software-properties-common &&\
+    curl -sL https://deb.nodesource.com/setup_20.x | bash - &&\
+    apt-get install -y nodejs\
     nginx
-
-## upgrade pip
-RUN pip3 install --upgrade --no-cache-dir pip
 
 ## reduce dependencies
 RUN apt-get autoremove -y &&\
@@ -28,34 +24,33 @@ RUN apt-get autoremove -y &&\
 RUN rm /etc/nginx/nginx.conf &&\
     rm /etc/nginx/sites-enabled/default
 
-## copy server and wsgi configs
+## copy server configs
 COPY ./gui/conf/nginx.conf /etc/nginx/
-COPY ./gui/conf/gunicorn.conf.py /etc/gunicorn/
 
 ## symlink server configs
 RUN ln -s /etc/nginx/sites-available/nginx.conf /etc/nginx/sites-enabled/
 
+## set working directory
+WORKDIR /app/gui
+
+## copy script
+COPY . /app
+
+## install nodejs libraires and build
+ENV NODE_OPTIONS=--max-old-space-size=4096
+RUN npm cache clean --force &&\
+    npm install
+
 ## create non-root user and permissions
 RUN groupadd -g 999 group &&\
     useradd -u 999 -g group -d /home/user -m -s /bin/bash user &&\
-    chown -R user:group /var/lib/nginx /var/log/nginx /etc/nginx /run
-
-## set working directory
-WORKDIR /app
-
-## copy application
-COPY . /app
-
-## install python libraires
-RUN pip3 install -r ./gui/requirements.txt
-
-## open port
-EXPOSE 4080
+    chown -R user:group /var/lib/nginx /var/log/nginx /etc/nginx /run /app/gui
 
 ## run non-root user
 USER user
 
-## run application
-ENTRYPOINT ["bash", "./gui/start.sh"]
+## open port
+EXPOSE 80
 
-## end container
+## run application
+ENTRYPOINT ["bash", "./start.sh"]
