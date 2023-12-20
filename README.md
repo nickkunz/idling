@@ -7,20 +7,15 @@ Main Description
 3. Web App: Flask/Quart
 4. WSGI/ASGI: Gunicorn/Uvicorn
 5. Proxy Server: Nginx
-6. Database: PostGIS (PostgreSQL)
+6. Database: PostgreSQL 16
 7. Interface: Streamlit
 
-## Getting Started
-1. Install Docker
-2. Clone Repository
-3. Build Docker Image
-4. Run Docker Container
-
-### Repo Structure
+### Repository Structure
 The repository follows the structure below:
 ```
 ├─ ext                   ## extract microservice
 ├─ sub                   ## subset microservice
+├─ gui                   ## interface microservice
 ├─ wrt                   ## write microservice
 ├─ .dockerignore         ## excluded file types in docker image
 ├─ .gitignore            ## excluded file types in version control
@@ -28,8 +23,17 @@ The repository follows the structure below:
 ├─ LICENSE               ## software license
 ├─ README.md             ## documentation
 ```
+## Getting Started (Local Development & Testing)
+1. Install Docker
+2. Clone Repository
+3. Build Container Image
+4. Run Container Image
 
-Each microservice is structured to follow the pattern below:
+## Kuebernetes Deployment (Staging & Production)
+1. Install Kubernetes
+
+### Microservice Pattern
+Each backend microservice is structured to follow the pattern below:
 ```
 ├─ ...
 ├─ abc
@@ -43,28 +47,26 @@ Each microservice is structured to follow the pattern below:
 │   ├─ requirements.txt  ## dependencies
 │   └─ start.sh          ## startup script
 ├─ ...
-```
 
-### Port Convention of Microservices
+The frontend microservice is structured in follow the pattern:
+├─ ...
+├─ gui
+│   ├─ conf              ## config files
+│   ├─ public            ## test code
+│   ├─ src               ## source code
+│   ├─ .env.example      ## env vars
+│   ├─ Dockerfile        ## container
+│   ├─ package-lock.json ## dependencies
+│   ├─ package.json      ## dependencies
+│   ├─ README.md         ## documentation
+│   └─ start.sh          ## startup script
+├─ ...
+```
+### Port Conventions
 - 8xxx: Extract (ext)
 - 7xxx: Subset (sub)
 - 6xxx: Write (wrt)
 - 5xxx: Database (db)
-- 4xxx: Interface (int)
+- 80: Interface (int)
 
-stop and remove all images including running containers
-docker rmi -f $(docker images -a -q)
-
-extract-base is never actually run by Docker Compose. Instead, it serves as a shared configuration for the other services. 
-
-
-Docker Commands
-docker-compose up --build
-docker-compose up -d --build ## detached mode
-docker-compose up build --no-cache ## no cache mode
-
-docker-compose down ## stop and remove containers, networks, images, and volumes
-docker rmi $(docker images -q) ## remove all images
-docker rmi -f $(docker images -q) ## remove all images (force)
-
-docker system prune
+## References
