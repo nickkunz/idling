@@ -2,6 +2,8 @@
 .venv
 .vscode
 ext/.env
+gui/.env
+rdb/.env
 sub/.env
 wrt/.env
 gui/node_modules
