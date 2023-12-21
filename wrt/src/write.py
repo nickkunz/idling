@@ -198,6 +198,7 @@ class WriteClient():
                         x = e
                     )
                 )
+                return
 
     ## return immediately if the websocket connection cannot be established
     def ws_thrd(self):
