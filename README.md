@@ -63,10 +63,11 @@ The frontend microservice is structured in follow the pattern:
 ├─ ...
 ```
 ### Port Conventions
-- 8xxx: Extract (ext)
-- 7xxx: Subset (sub)
-- 6xxx: Write (wrt)
-- 5xxx: Database (db)
+- 8080: Extract (ext)
+- 7080: Subset (sub)
+- 6080: Write (wrt)
+- 5432: Database (db)
+- 6180: Read (db)
 - 80: Interface (int)
 
 ## References
