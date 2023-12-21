@@ -84,25 +84,19 @@ class WriteClient():
 
     ## initialize database
     def db_init(self):
-        
-        ## no existing agency table
         self.cursor = self.connect.cursor()
-        self.cursor.execute("SELECT to_regclass('public.agency')")
-        if self.cursor.fetchone()[0] is None:
 
-            ## init database
-            query = self.db_read(path = self.sql_init) # init query file path
-            self.cursor.execute(query = query)
-            self.connect.commit()
-            logger.info(msg = 'Client successfully initialized database.')
+        ## init database
+        query = self.db_read(path = self.sql_init) # init query file path
+        self.cursor.execute(query = query)
+        self.connect.commit()
+        logger.info(msg = 'Client successfully initialized database.')
 
-            ## create agency table
-            query = self.db_read(path = self.sql_agency)  # agency query file path
-            self.cursor.execute(query = query)
-            self.connect.commit()
-            logger.info(msg = 'Client successfully created agency table.')
-        else:
-            logger.info(msg = 'Client already initialized database.')
+        ## create agency table
+        query = self.db_read(path = self.sql_agency)  # agency query file path
+        self.cursor.execute(query = query)
+        self.connect.commit()
+        logger.info(msg = 'Client successfully created agency table.')
 
     ## initialize websocket
     def ws_init(self):
