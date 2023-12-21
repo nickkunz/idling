@@ -6,7 +6,7 @@ WITH j (iata_id, agency, city, country, region, continent) AS (
     ('BOS', 'Massachusetts Bay Transportation Authority (MBTA)', 'Boston', 'United States', 'United States East', 'North America'),
     ('PIT', 'Pittsburgh Regional Transit (PRT)', 'Pittsburgh', 'United States', 'United States East', 'North America'),
     ('LAX', 'Los Angeles County Metropolitan Transportation Authority (Metro)', 'Los Angeles', 'United States', 'United States West', 'North America'),
-    ('SFO', 'San Francisco Municipal Transportation Agency (SFMTA)', 'San Francisco', 'United States', 'United States West', 'North America'),
+    ('SFO', 'Metropolitan Transportation Commission (MTC)', 'San Francisco', 'United States', 'United States West', 'North America'),
     ('SEA', 'King County Metro (Metro)', 'Seattle', 'United States', 'United States West', 'North America'),
     ('SMF', 'Sacramento Regional Transit District (SacRT)', 'Sacramento', 'United States', 'United States West', 'North America'),
     ('PDX', 'Tri-County Metropolitan Transportation District of Oregon (TriMet)', 'Portland', 'United States', 'United States West', 'North America'),
