@@ -444,7 +444,8 @@ class ExtractClient():
 
                 # validate message header
                 if (message.header.gtfs_realtime_version == '2.0' or \
-                    message.header.gtfs_realtime_version == '1.0') and \
+                    message.header.gtfs_realtime_version == '1.0' or \
+                    message.header.gtfs_realtime_version == '0.1') and \
                     message.header.incrementality == gtfs_realtime_pb2.FeedHeader.FULL_DATASET:
 
                     ## validate entity
