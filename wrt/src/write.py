@@ -84,25 +84,19 @@ class WriteClient():
 
     ## initialize database
     def db_init(self):
-        
-        ## check for existing tables
         self.cursor = self.connect.cursor()
-        self.cursor.execute("SELECT to_regclass('public.agency')")
 
-        if self.cursor.fetchone()[0] is None:
-            query = self.db_read(path = self.sql_init) # init query file path
-            self.cursor.execute(query = query)
-            self.connect.commit()
-            logger.info(msg = 'Client successfully initialized database.')
+        ## init database
+        query = self.db_read(path = self.sql_init) # init query file path
+        self.cursor.execute(query = query)
+        self.connect.commit()
+        logger.info(msg = 'Client successfully initialized database.')
 
-            self.cursor.execute("SELECT to_regclass('public.agency')")
-            if self.cursor.fetchone()[0] is None:
-                query = self.db_read(path = self.sql_agency)  # agency query file path
-                self.cursor.execute(query = query)
-                self.connect.commit()
-                logger.info(msg = 'Client successfully created agency table.')
-        else:
-            logger.info(msg = 'Client already initialized database.')
+        ## create agency table
+        query = self.db_read(path = self.sql_agency)  # agency query file path
+        self.cursor.execute(query = query)
+        self.connect.commit()
+        logger.info(msg = 'Client successfully created agency table.')
 
     ## initialize websocket
     def ws_init(self):
@@ -163,13 +157,12 @@ class WriteClient():
                 logger.error(msg = 'Client failed to parse websocket response.')
 
             ## insert events into table
-            try:
-                with self.lock:
-                    cursor = self.connect.cursor()
-                    for i in data:
-                        query = self.db_read(path = self.sql_events)
-                        logger.debug(msg = 'Client successfully read SQL query.')
-
+            with self.lock:
+                cursor = self.connect.cursor()
+                for i in data:
+                    query = self.db_read(path = self.sql_events)
+                    logger.debug(msg = 'Client successfully read SQL query.')
+                    try:
                         cursor.execute(
                             query = query,
                             vars = (
@@ -191,21 +184,25 @@ class WriteClient():
                             )
                         )
 
-                    ## save changes to database
-                    self.connect.commit()
-                    logger.info(msg = 'Client successfully wrote to database.')
-                    time.sleep(0.1)  ## patch for packet queue is empty error
+                        ## save changes to database
+                        self.connect.commit()
+                        logger.debug(msg = 'Client successfully wrote observation to database.')
+                        time.sleep(0.1)  ## fix for packet queue is empty error
 
-            ## undo insert attempt
-            except psycopg2.extensions.TransactionRollbackError as e:
-                self.connect.rollback()
-                logger.error(
-                    msg = 'Client failed to write to database: {x}.'.format(
-                        x = e
-                    )
-                )
+                    ## undo insert attempt
+                    except psycopg2.extensions.TransactionRollbackError as e:
+                        self.connect.rollback()
+                        logger.error(
+                            msg = 'Client failed to write to database: {x}.'.format(
+                                x = e
+                            )
+                        )
+                        return
+                
+                ## single commit for all events
+                logger.info(msg = 'Client successfully wrote to database.')
 
-    ## return immediately if the websocket connection cannot be established
+    ## connect to websocket with threading
     def ws_thrd(self):
         for i in range(0, self.recon_tries):
             try:
@@ -228,7 +225,6 @@ class WriteClient():
         else:
             logger.error(msg = 'Client failed to connect to websocket server. Max number of reconnection attempts.')
 
-    ## connect to websocket
     def ws_conn(self):
         if hasattr(self, 'sio') and self.sio.connected:
             logger.info(msg = 'Client already connected to websocket server.')
