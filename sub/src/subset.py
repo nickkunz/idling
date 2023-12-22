@@ -73,7 +73,7 @@ def get_req_par(url, key = None):
             (i.vehicle.trip.route_id or i.vehicle.trip.trip_id)
             )
         ]
-        logging.debug(msg = 'Client successfully validated protobuf header from {x}.'.format(
+        logging.debug(msg = 'Client successfully validated message entity from {x}.'.format(
             x = url
             )
         )
