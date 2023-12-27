@@ -155,7 +155,7 @@ class ExtractClient():
         second = datetime.now().second
         key = keys[second % len(keys)]
 
-        logging.debug(msg = 'Client used API key {x} for URL {y}'.format(
+        logger.debug(msg = 'Client used API key {x} for URL {y}'.format(
             x = hash(key),  ## hash of the key for security
             y = url
             )
@@ -348,7 +348,7 @@ class ExtractClient():
                     )
 
                 ## log request headers before sending requests
-                logging.debug('Request headers for {x}: {y}'.format(
+                logger.debug('Request headers for {x}: {y}'.format(
                         x = url,
                         y = headers
                     )
@@ -370,7 +370,7 @@ class ExtractClient():
                         ## exceeded rate limit response
                         if k.status == 429:
                             t_retry = int(k.headers.get('Retry-After', 0))
-                            logging.warning(
+                            logger.warning(
                                 msg = 'GET request to {x} rate limited with HTTP status code {y}. Retry after {t} seconds.'.format(
                                     x = url_log,
                                     y = k.status,
@@ -381,7 +381,7 @@ class ExtractClient():
 
                         ## other unsuccessful response
                         elif k.status != 200:
-                            logging.warning(
+                            logger.warning(
                                 msg = 'GET request to {x} unsuccessful with HTTP status code {y}.'.format(
                                     x = url_log,
                                     y = k.status
@@ -389,7 +389,7 @@ class ExtractClient():
                             )
                             continue  ## proceeds to next url upon exception
                     else:
-                        logging.error(
+                        logger.error(
                             msg = 'GET request to {x} failed with unknown HTTP status.'.format(
                                 x = url_log
                             )
@@ -398,7 +398,7 @@ class ExtractClient():
 
                 ## successful response
                 else:
-                    logging.debug(
+                    logger.debug(
                         msg = 'GET request to {x} successful with HTTP status code {y}.'.format(
                             x = url_log,
                             y = k.status
@@ -409,7 +409,7 @@ class ExtractClient():
 
                     ## payload error
                     except ClientPayloadError as e:
-                        logging.error(
+                        logger.error(
                             msg = '{x}.'.format(
                                 x = e
                                 )
@@ -419,15 +419,13 @@ class ExtractClient():
                 message = gtfs_realtime_pb2.FeedMessage()
                 if content is not None:
                     try:
-                        message.ParseFromString(bytes(content))  ## force bytes data type
-                        logging.debug(
-                            msg = 'Protobuf parsing successful for {x}.'.format(
-                                x = url_log
-                            )
+                        message.ParseFromString(
+                            bytes(content)
                         )
+                        logger.debug(msg = 'Client successfully parsed protobuf message.')
                     except Exception as e:
-                        logging.error(
-                            msg = 'Protobuf parsing error: {x}'.format(
+                        logger.error(
+                            msg = 'Client failed to parse protobuf message: {x}'.format(
                                 x = e
                             )
                         )
@@ -435,7 +433,7 @@ class ExtractClient():
 
                 ## unsuccessful protobuf response, http status, headers (strict order)
                 else:
-                    logging.warning(msg = 'No protobuf response to parse.')
+                    logger.warning(msg = 'Client found no protobuf response to parse.')
                     return None, 202, {
                         'Content-Type': 'application/x-protobuf',
                         'Content-Length': 0,
@@ -447,6 +445,7 @@ class ExtractClient():
                     message.header.gtfs_realtime_version == '1.0' or \
                     message.header.gtfs_realtime_version == '0.1') and \
                     message.header.incrementality == gtfs_realtime_pb2.FeedHeader.FULL_DATASET:
+                    logger.debug(msg = 'Client successfully validated protobuf message header.')
 
                     ## validate entity
                     entity_valid = [j for j in message.entity if (
@@ -466,17 +465,14 @@ class ExtractClient():
                     ## final message validation
                     del message.entity[:]
                     message.entity.extend(entity_valid)
-                    logging.debug(
-                        msg = 'Protobuf validation successful for {x}.'.format(
-                            x = url_log
-                        )
-                    )
+                    logger.debug(msg = 'Client successfully processed protobuf message entity.')
 
                     ## serialize message, append to feed, update content length
                     feeds += message.SerializeToString()
                     content_length = len(feeds) if feeds else 0
 
             ## successful protobuf response, http status, headers (strict order)
+            logger.info(msg = 'Client successfully processed GET request.')
             return feeds, 200, {
                 'Content-Type': 'application/x-protobuf',
                 'Content-Length': str(content_length),
