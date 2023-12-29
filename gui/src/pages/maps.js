@@ -91,9 +91,9 @@ function App({ selectedCity }) {
     useEffect(() => {
         if (selectedCity) {
             const now = new Date();
-            now.setHours(now.getHours() - 24);  // 24 hours ago
-            const unicodeDatetime = now.toISOString();
-            fetchData(`/idle?iata_id=${selectedCity.iataId}&start_datetime=${unicodeDatetime}`); 
+            now.setHours(now.getHours() - 24);  // 24hrs ago
+            const roundedNow = Math.floor(now.getTime() / 1000);  // nearest second
+            fetchData(`/idle?iata_id=${selectedCity.iataId}&start_datetime=${roundedNow}`); 
         } 
     }, [selectedCity])
 
