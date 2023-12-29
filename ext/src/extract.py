@@ -237,6 +237,18 @@ class ExtractClient():
                             params = params
                         )
                     )
+                ## san diego
+                elif i == 'API_END_SAN':
+                    params = {
+                        'key': self.keys['API_KEY_SAN']
+                    }
+                    connection.append(
+                        session.get(
+                            url = url,
+                            headers = headers,
+                            params = params
+                        )
+                    )
                 ## portland
                 elif i == 'API_END_PDX':
                     params = {'appID': self.keys['API_KEY_PDX']}
