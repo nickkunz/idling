@@ -41,28 +41,41 @@ def get_req_par(url, key = None):
         url = url,
         headers = key
     )
-    logging.debug(msg = 'Client GET request to {x} completed successfully.'.format(
+    logger.debug(msg = 'Client successfully completed GET request to {x}.'.format(
         x = url
         )
     )
 
     ## parse protobuf
     message = gtfs_realtime_pb2.FeedMessage()
-    message.ParseFromString(response.content)
-    logging.debug(msg = 'Client successfully parsed protobuf from {x}.'.format(
-        x = url
-        )
-    )
+    if response.content is not None:
+        try:
+            message.ParseFromString(
+                bytes(response.content)
+            )
+            logger.debug(msg = 'Client successfully parsed protobuf message.')
+        except Exception as e:
+            logger.error(
+                msg = 'Client failed to parse protobuf message: {x}'.format(
+                    x = e
+                )
+            )
+
+    ## unsuccessful protobuf response, http status, headers (strict order)
+    else:
+        logger.warning(msg = 'Client found no protobuf response to parse.')
+        return None, 202, {
+            'Content-Type': 'application/x-protobuf',
+            'Content-Length': 0,
+            'Connection': 'keep-alive'
+        }
 
     ## validate header
     if (message.header.gtfs_realtime_version == '2.0' or \
         message.header.gtfs_realtime_version == '1.0' or \
         message.header.gtfs_realtime_version == '0.1') and \
         message.header.incrementality == gtfs_realtime_pb2.FeedHeader.FULL_DATASET:
-        logging.debug(msg = 'Client successfully validated protobuf header from {x}.'.format(
-            x = url
-            )
-        )
+        logger.debug(msg = 'Client successfully validated protobuf message header.')
 
         ## validate entity
         entity_valid = [i for i in message.entity if (
@@ -73,15 +86,11 @@ def get_req_par(url, key = None):
             (i.vehicle.trip.route_id or i.vehicle.trip.trip_id)
             )
         ]
-        logging.debug(msg = 'Client successfully validated message entity from {x}.'.format(
-            x = url
-            )
-        )
 
-        ## output message validation
+        ## final message validation
         del message.entity[:]
         message.entity.extend(entity_valid)
-        logging.info(msg = 'Client successfully processed GET request.')
+        logger.debug(msg = 'Client successfully validated protobuf message entity.')
     return message.entity
 
 ## parse ids
@@ -183,7 +192,12 @@ def feed_idle(buffer, feed_h, move_k, move_m, time_h):
     ## init feeds
     try:
         feed_a, feed_b, feed_c = buffer[0], buffer[time_h], buffer[time_h + 1]
-        logging.debug(msg = 'Client successfully initialized sets A, B, and C.')
+        logger.debug(msg = 'Client initialized feeds A, B, and C of length {x}, {y}, and {z} respectively.'.format(
+            x = len(feed_a),
+            y = len(feed_b),
+            z = len(feed_c)
+            )
+        )
 
     except Exception as e:
         logger.error(msg = 'Client failed to initialized sets A, B, C: {x}.'.format(
@@ -196,41 +210,49 @@ def feed_idle(buffer, feed_h, move_k, move_m, time_h):
     feed_b = del_ids(feed = feed_b)
     feed_c = del_ids(feed = feed_c)
 
-    ## intersect of feed a and feed b from symmet diff
+    ## pre-process feed a and feed b from symmet diff
     ids_a = set_ids(feed = feed_a)
     ids_b = set_ids(feed = feed_b)
     ids_w = ids_a.symmetric_difference(ids_b)
     if len(ids_w) > 0:
         feed_a = exd_ids(
-            feed_x = feed_a, 
+            feed_x = feed_a,
             ids_x = ids_w
         )
         feed_b = exd_ids(
-            feed_x = feed_b, 
+            feed_x = feed_b,
             ids_x = ids_w
         )
+    logger.debug(msg = 'Client preprocessed feeds A and B of length {x} and {y} respectively.'.format(
+        x = len(feed_a),
+        y = len(feed_b)
+        )
+    )
 
     ## find events for feed h from intersect of feed a and feed b
     time_d = list()
     for a, b in zip(feed_a, feed_b):
-        if a.vehicle.vehicle.id == b.vehicle.vehicle.id and \
-        ((a.vehicle.trip.trip_id == b.vehicle.trip.trip_id if hasattr(a.vehicle.trip, 'trip_id') and hasattr(b.vehicle.trip, 'trip_id') else True) or 
-        (a.vehicle.trip.route_id == b.vehicle.trip.route_id if hasattr(a.vehicle.trip, 'route_id') and hasattr(b.vehicle.trip, 'route_id') else True)) and \
-        a.vehicle.position.latitude == b.vehicle.position.latitude and \
-        a.vehicle.position.longitude == b.vehicle.position.longitude and \
-        a.vehicle.timestamp < b.vehicle.timestamp:
-            
+        if (str(a.vehicle.vehicle.id) == str(b.vehicle.vehicle.id) and \
+        ((str(a.vehicle.trip.trip_id) == str(b.vehicle.trip.trip_id) if hasattr(a.vehicle.trip, 'trip_id') and hasattr(b.vehicle.trip, 'trip_id') else True) and \
+        (str(a.vehicle.trip.route_id) == str(b.vehicle.trip.route_id) if hasattr(a.vehicle.trip, 'route_id') and hasattr(b.vehicle.trip, 'route_id') else True)) and \
+        float(a.vehicle.position.latitude) == float(b.vehicle.position.latitude) and \
+        float(a.vehicle.position.longitude) == float(b.vehicle.position.longitude) and \
+        int(a.vehicle.timestamp) < int(b.vehicle.timestamp)):
+
             ## filter for unique events in feed h
             idle_h = next((i for i in feed_h
-                if i.vehicle.vehicle.id == b.vehicle.vehicle.id and \
-                ((i.vehicle.trip.trip_id == b.vehicle.trip.trip_id if hasattr(i.vehicle.trip, 'trip_id') and hasattr(b.vehicle.trip, 'trip_id') else True) or 
-                (i.vehicle.trip.route_id == b.vehicle.trip.route_id if hasattr(i.vehicle.trip, 'route_id') and hasattr(b.vehicle.trip, 'route_id') else True)) and \
-                i.vehicle.position.latitude == b.vehicle.position.latitude and \
-                i.vehicle.position.longitude == b.vehicle.position.longitude),
+                if (str(i.vehicle.vehicle.id) == str(b.vehicle.vehicle.id) and \
+                ((str(i.vehicle.trip.trip_id) == str(b.vehicle.trip.trip_id) if hasattr(i.vehicle.trip, 'trip_id') and hasattr(b.vehicle.trip, 'trip_id') else True) and \
+                (str(i.vehicle.trip.route_id) == str(b.vehicle.trip.route_id) if hasattr(i.vehicle.trip, 'route_id') and hasattr(b.vehicle.trip, 'route_id') else True)) and \
+                float(i.vehicle.position.latitude) == float(b.vehicle.position.latitude) and \
+                float(i.vehicle.position.longitude) == float(b.vehicle.position.longitude))),
                 None
             )
+            logger.debug(msg = 'Client successfully filtered H_i for unique events.')
+
+            ## filter for most recent event in feed h
             if idle_h is not None:
-                if idle_h.vehicle.timestamp > b.vehicle.timestamp:
+                if int(idle_h.vehicle.timestamp) > int(b.vehicle.timestamp):
                     continue
             else:
                 feed_h.append(b)
@@ -240,12 +262,16 @@ def feed_idle(buffer, feed_h, move_k, move_m, time_h):
                     time_g = int(b.vehicle.timestamp) - int(a.vehicle.timestamp)
                     if time_g > time_h:
                         time_d.append({
-                            'vehicle_id': b.id,
-                            'duration': time_g - time_h
+                            'vehicle_id': b.vehicle.vehicle.id,
+                            'duration': int(time_g) - int(time_h)
                         }
                     )
+    logger.debug(msg = 'Client initalized feed H of length {x}.'.format(
+        x = len(feed_h)
+        )
+    )
 
-    ## intersect of feed h and feed c from symmet diff
+    ## pre-process feed h and feed c from symmet diff
     ids_h = set_ids(feed = feed_h)
     ids_c = set_ids(feed = feed_c)
     ids_z = ids_h.symmetric_difference(ids_c)
@@ -254,6 +280,11 @@ def feed_idle(buffer, feed_h, move_k, move_m, time_h):
             feed_x = feed_c,
             ids_x = ids_z
         )
+    logger.debug(msg = 'Client preprocessed feeds H and C of length {x} and {y} respectively.'.format(
+        x = len(feed_h),
+        y = len(feed_c)
+        )
+    )
 
     ## init feed c attr
     attr_c = {(
@@ -296,12 +327,12 @@ def feed_idle(buffer, feed_h, move_k, move_m, time_h):
     feed_y = list()
     for i in feed_h:
         for j in feed_c:
-            if i.vehicle.vehicle.id == j.vehicle.vehicle.id and \
-            ((i.vehicle.trip.trip_id == j.vehicle.trip.trip_id if hasattr(i.vehicle.trip, 'trip_id') and hasattr(j.vehicle.trip, 'trip_id') else True) or 
-            (i.vehicle.trip.route_id == j.vehicle.trip.route_id if hasattr(i.vehicle.trip, 'route_id') and hasattr(j.vehicle.trip, 'route_id') else True)) and \
-            i.vehicle.position.latitude == j.vehicle.position.latitude and \
-            i.vehicle.position.longitude == j.vehicle.position.longitude and \
-            i.vehicle.timestamp < j.vehicle.timestamp:
+            if (str(i.vehicle.vehicle.id) == str(j.vehicle.vehicle.id) and \
+            ((str(i.vehicle.trip.trip_id) == str(j.vehicle.trip.trip_id) if hasattr(i.vehicle.trip, 'trip_id') and hasattr(j.vehicle.trip, 'trip_id') else True) and \
+            (str(i.vehicle.trip.route_id) == str(j.vehicle.trip.route_id) if hasattr(i.vehicle.trip, 'route_id') and hasattr(j.vehicle.trip, 'route_id') else True)) and \
+            float(i.vehicle.position.latitude) == float(j.vehicle.position.latitude) and \
+            float(i.vehicle.position.longitude) == float(j.vehicle.position.longitude) and \
+            int(i.vehicle.timestamp) < int(j.vehicle.timestamp)):
 
                 ## create idle event
                 idle_y = {
@@ -328,6 +359,11 @@ def feed_idle(buffer, feed_h, move_k, move_m, time_h):
                 ## add idle event to final output
                 if idle_y['duration'] > 0:  ## ensure no time sync errors
                     feed_y.append(idle_y)
+
+    logger.debug(msg = 'Client successfully computed feed Y of length {x}.'.format(
+        x = len(feed_y)
+        )
+    )
 
     ## idle event feeds
     return feed_y, feed_h
@@ -373,7 +409,6 @@ def find_idle(url, key = None, time_r = 30, time_h = 1, move_m = 10, loop_n = No
                 url = url,
                 key = key
             )
-
             buffer.append(
                 response
             )
