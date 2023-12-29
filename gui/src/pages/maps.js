@@ -52,7 +52,7 @@ function App({ selectedCity }) {
     }, [userInteracted]);
 
     useEffect(() => {
-        const interval = setInterval(animate, 10);
+        const interval = setInterval(animate, 100);  // update every x milliseconds
         return () => clearInterval(interval);
     }, [animate]);
 
@@ -78,6 +78,7 @@ function App({ selectedCity }) {
                     console.error('Data format unexpected:', fetchedData);
                 }
                 setDataLoaded(true);
+                setIsPlaying(true); // Start the animation after data is loaded
             })
             .catch(error => console.error('Error fetching data:', error));
     };
@@ -86,12 +87,15 @@ function App({ selectedCity }) {
         fetchData('/idle?iata_id=NYC');  // init loci
     }, []);
 
-    // fetch data for selected city
+    // fetch data for selected city last 24 hours
     useEffect(() => {
         if (selectedCity) {
-            fetchData(`/idle?iata_id=${selectedCity.iataId}`); 
+            const now = new Date();
+            now.setHours(now.getHours() - 24);  // 24 hours ago
+            const unicodeDatetime = now.toISOString();
+            fetchData(`/idle?iata_id=${selectedCity.iataId}&start_datetime=${unicodeDatetime}`); 
         } 
-        }, [selectedCity])
+    }, [selectedCity])
 
     // animation logic
     useEffect(() => {
@@ -269,7 +273,10 @@ function App({ selectedCity }) {
                 value={currentTime}
                 isPlaying={isPlaying}
                 setIsPlaying={setIsPlaying}
-                onChange={(newValue) => setCurrentTime(newValue)}
+                onChange={(newValue) => {
+                    setIsPlaying(false); // Pause the animation
+                    setCurrentTime(newValue);
+                }}
             />
         </DeckGL>
     );
