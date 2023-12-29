@@ -8,5 +8,6 @@
 5. Reverse Proxy: Nginx (Latest)
 
 ## GTFS Realtime REST API Support
+- San Diego, US: https://www.sdmts.com/business-center/app-developers/real-time-data
 - Denver, US: https://www.rtd-denver.com/files/gtfs-rt/VehiclePosition.pb
 - Dublin, IR: https://developer.nationaltransport.ie/

@@ -25,7 +25,7 @@ const Live = [
       { name: 'Pittsburgh', iata_id: 'PIT', coordinates: { longitude: -79.9959, latitude: 40.4406 } },
       { name: 'Los Angeles', iata_id: 'LAX', coordinates: { longitude: -118.2437, latitude: 34.0522 } },
       { name: 'San Francisco', iata_id: 'SFO', coordinates: { longitude: -122.41669, latitude: 37.7853 } },
-      { name: 'San Diego', iata_id: 'SAN', coordinates: { longitude: -122.3321, latitude: 47.6062 } },
+      { name: 'San Diego', iata_id: 'SAN', coordinates: { longitude: -117.161087, latitude: 32.715736 } },
       { name: 'Seattle', iata_id: 'SEA', coordinates: { longitude: -122.3321, latitude: 47.6062 } },
       { name: 'Sacramento', iata_id: 'SMF', coordinates: { longitude: -121.4944, latitude: 38.5816 } },
       { name: 'Portland', iata_id: 'PDX', coordinates: { longitude: -122.6784, latitude: 45.5152 } },
