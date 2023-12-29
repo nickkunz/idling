@@ -132,17 +132,17 @@ services:
       retries: 3
     restart: always
 
-  # interface:
-  #   build:
-  #     context: .
-  #     dockerfile: ./gui/Dockerfile
-  #   ports:
-  #     - "80:80"
-  #   user: user
-  #   cap_drop:
-  #     - ALL
-  #     - SETUID
-  #     - SETGID
-  #   security_opt:
-  #     - no-new-privileges:true
-  #   restart: always
+  interface:
+    build:
+      context: .
+      dockerfile: ./gui/Dockerfile
+    ports:
+      - "80:80"
+    user: user
+    cap_drop:
+      - ALL
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    restart: always
