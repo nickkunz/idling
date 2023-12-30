@@ -1,7 +1,3 @@
-// deck.gl data filter extension
-// ref: https://deck.gl/examples/data-filter-extension
-// src: https://github.com/visgl/deck.gl/blob/8.9-release/examples/website/data-filter/range-input.jsx
-
 import React, { useEffect, useState, useRef } from 'react';
 import { styled, withStyles } from '@material-ui/core/styles';
 import Slider from '@material-ui/core/Slider';
@@ -48,14 +44,14 @@ export default function RangeInput({ min, max, value: propValue, onChange, isPla
     useEffect(() => {
         if (isPlaying) {
             intervalRef.current = setInterval(() => {
-                let newValue = valueRef.current + 1000;  // Assuming value is a single timestamp
+                let newValue = valueRef.current + 1000;
                 if (newValue > max) {
-                    newValue = min;  // Reset to start
+                    newValue = min;  // reset to start
                 }
                 setValue(newValue);
                 valueRef.current = newValue;
                 onChange(newValue);
-            }, 1000); // Update every 1 second
+            }, 1000);  // update every sec
         } else {
             clearInterval(intervalRef.current);
         }
