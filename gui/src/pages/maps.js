@@ -52,7 +52,7 @@ function App({ selectedCity }) {
     }, [userInteracted]);
 
     useEffect(() => {
-        const interval = setInterval(animate, 100);  // update every x milliseconds
+        const interval = setInterval(animate, 200);  // update every x milliseconds
         return () => clearInterval(interval);
     }, [animate]);
 
@@ -91,7 +91,7 @@ function App({ selectedCity }) {
     useEffect(() => {
         if (selectedCity) {
             const now = new Date();
-            now.setHours(now.getHours() - 24);  // 24hrs ago
+            now.setUTCHours(now.getUTCHours() - 24);  // 24hrs ago in utc
             const roundedNow = Math.floor(now.getTime() / 1000);  // nearest second
             fetchData(`/idle?iata_id=${selectedCity.iataId}&start_datetime=${roundedNow}`); 
         } 
@@ -109,7 +109,7 @@ function App({ selectedCity }) {
                     }
                     return newTime;
                 });
-            }, 100);  // update every x milliseconds
+            }, 200);  // update every x milliseconds
         }
         return () => clearInterval(interval);
     }, [isPlaying, currentTime, animationStartTime, animationEndTime]);
@@ -156,7 +156,7 @@ function App({ selectedCity }) {
                     }
                     return newTime;
                 });
-            }, 100);
+            }, 200);
         }
         return () => clearInterval(animationInterval);
     }, [isPlaying, currentTime, dataLoaded, animationStartTime, animationEndTime]);
