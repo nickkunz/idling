@@ -83,16 +83,23 @@ function App({ selectedCity }) {
             .catch(error => console.error('Error fetching data:', error));
     };
 
+    // posix timestamp last 24 hours
+    const fetchData24Hours = () => {
+        const now = new Date();
+        const twentyFourHours = new Date(now.getTime() - 24 * 60 * 60 * 1000);  // last 24 hours
+        return Math.floor(twentyFourHours.getTime() / 1000);  // convert to posix timestamp
+    }
+
+    // fetch data for NYC last 24 hours
     useEffect(() => {
-        fetchData('/idle?iata_id=NYC');  // init loci
+        const roundedNow = fetchData24Hours();
+        fetchData(`/idle?iata_id=NYC&start_datetime=${roundedNow}`);  // init loci
     }, []);
 
     // fetch data for selected city last 24 hours
     useEffect(() => {
         if (selectedCity) {
-            const now = new Date();
-            now.setUTCHours(now.getUTCHours() - 24);  // 24hrs ago in utc
-            const roundedNow = Math.floor(now.getTime() / 1000);  // nearest second
+            const roundedNow = fetchData24Hours();
             fetchData(`/idle?iata_id=${selectedCity.iataId}&start_datetime=${roundedNow}`); 
         } 
     }, [selectedCity])
