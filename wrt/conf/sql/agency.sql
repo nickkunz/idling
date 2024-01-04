@@ -49,7 +49,7 @@ WITH j (iata_id, agency, city, country, region, continent) AS (
     ('BNE', 'Translink (Queensland)', 'Brisbane', 'Australia', 'Oceania', 'Oceania'),
     ('ADL', 'Adelaide Metro', 'Adelaide', 'Australia', 'Oceania', 'Oceania'),
     ('AKL', 'Auckland Transport (AT)', 'Auckland', 'New Zealand', 'Oceania', 'Oceania'),
-    ('CHC', 'Environment Canterbury (ECan)', 'Christchurch', 'New Zealand', 'Oceania', 'Oceania'),
+    ('CHC', 'Environment Canterbury (Metro)', 'Christchurch', 'New Zealand', 'Oceania', 'Oceania'),
     ('DEL', 'Delhi Transport Corporation (DTC)', 'Delhi', 'India', 'Asia', 'Asia')
 )
 INSERT INTO agency (iata_id, agency, city, country, region, continent)
