@@ -70,6 +70,31 @@ class TestData(unittest.TestCase):
             msg = "Observations are missing both 'route_id' and 'trip_id'."
         )
 
+    ## test geocoords
+    def test_geocoords(self):
+        lat_null = self.data['latitude'].isnull()
+        lon_null = self.data['longitude'].isnull()
+
+        lat_not_float = self.data['latitude'].map(lambda x: not isinstance(x, float))
+        lon_not_float = self.data['longitude'].map(lambda x: not isinstance(x, float))
+
+        self.assertFalse(
+            expr = lat_null.any(), 
+            msg = "Missing observations in 'latitude' column."
+        )
+        self.assertFalse(
+            expr = lon_null.any(), 
+            msg = "Missing observations in 'longitude' column."
+        )
+        self.assertFalse(
+            expr = lat_not_float.any(), 
+            msg = "Non-float values found in 'latitude' column."
+        )
+        self.assertFalse(
+            expr = lon_not_float.any(), 
+            msg = "Non-float values found in 'longitude' column."
+        )
+
     ## test datetime
     def test_datetime(self):
         self.data.sort_values(by = 'datetime', inplace = True)
