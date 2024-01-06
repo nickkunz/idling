@@ -4,6 +4,7 @@
 ext/.env
 gui/.env
 rdb/.env
+rdb/src/__pycache__
 sub/.env
 wrt/.env
 gui/node_modules
