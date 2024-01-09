@@ -25,7 +25,7 @@ class WriteClient():
                  ws_host,
                  db_name, db_user, db_pswd, db_host, db_port,
                  sql_init, sql_agency, sql_events,
-                 recon_tries = 5, recon_delay = 1, recon_timeo = 120):
+                 recon_tries = 20, recon_delay = 1, recon_timeo = 120):
 
         self.ws_host = ws_host
         self.db_name = db_name
@@ -186,8 +186,8 @@ class WriteClient():
 
                         ## save changes to database
                         self.connect.commit()
-                        logger.debug(msg = 'Client successfully wrote observation to database.')
-                        time.sleep(1)  ## fix for packet queue is empty error
+                        logger.debug(msg = 'Client successfully wrote single observation to database.')
+                        time.sleep(30)  ## fix for packet queue is empty error
 
                     ## undo failed attempt
                     except Exception as e:
@@ -200,7 +200,7 @@ class WriteClient():
                         return
                 
                 ## single commit for all events
-                logger.info(msg = 'Client successfully wrote to database.')
+                logger.info(msg = 'Client successfully wrote observations to database.')
 
     ## connect to websocket with threading
     def ws_thrd(self):
