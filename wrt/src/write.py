@@ -187,7 +187,6 @@ class WriteClient():
                         ## save changes to database
                         self.connect.commit()
                         logger.debug(msg = 'Client successfully wrote single observation to database.')
-                        time.sleep(30)  ## fix for packet queue is empty error
 
                     ## undo failed attempt
                     except Exception as e:
@@ -199,7 +198,6 @@ class WriteClient():
                         )
                         return
                 
-                ## single commit for all events
                 logger.info(msg = 'Client successfully wrote observations to database.')
 
     ## connect to websocket with threading
