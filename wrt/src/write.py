@@ -25,7 +25,7 @@ class WriteClient():
                  ws_host,
                  db_name, db_user, db_pswd, db_host, db_port,
                  sql_init, sql_agency, sql_events,
-                 recon_tries = 3, recon_delay = 1, recon_timeo = 60):
+                 recon_tries = 5, recon_delay = 1, recon_timeo = 120):
 
         self.ws_host = ws_host
         self.db_name = db_name
