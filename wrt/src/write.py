@@ -187,10 +187,10 @@ class WriteClient():
                         ## save changes to database
                         self.connect.commit()
                         logger.debug(msg = 'Client successfully wrote observation to database.')
-                        time.sleep(0.1)  ## fix for packet queue is empty error
+                        time.sleep(1)  ## fix for packet queue is empty error
 
-                    ## undo insert attempt
-                    except psycopg2.extensions.TransactionRollbackError as e:
+                    ## undo failed attempt
+                    except Exception as e:
                         self.connect.rollback()
                         logger.error(
                             msg = 'Client failed to write to database: {x}.'.format(
@@ -277,6 +277,8 @@ class WriteClient():
             self.db_init()  ## initialize database
             self.ws_init()  ## initialize websocket
             self.ws_conn()  ## connect websocket
+            while not self.sio.connected:  ## wait for websocket connection
+                time.sleep(1)
 
         except Exception as e:
             self.close()  ## clean resources
