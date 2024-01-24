@@ -197,10 +197,42 @@ class TestMissingness(TestData):
             msg = "There are missing values in the 'vehicle_id' column."
         )
 
+    def test_null_route_id(self):
+        null = self.data[self.data['route_id'].isnull()]
+        null_perc = (len(null) / len(self.data)) * 100
+        if null_perc == 0:
+            print("No missing values in 'route_id' column.")
+        else:
+            print("{x}% of missing values in 'route_id' column.".format(
+                x = round(number = null_perc, ndigits = 2)
+                )
+            )
+        self.assertLessEqual(
+            a = null_perc,
+            b = 50,
+            msg = "The percentage of missing values in 'route_id' column is greater than 50%."
+        )
+
+    def test_null_trip_id(self):
+        null = self.data[self.data['trip_id'].isnull()]
+        null_perc = (len(null) / len(self.data)) * 100
+        if null_perc == 0:
+            print("No missing values in 'trip_id' column.")
+        else:
+            print("{x}% of missing values in 'trip_id' column.".format(
+                x = round(number = null_perc, ndigits = 2)
+                )
+            )
+        self.assertLessEqual(
+            a = null_perc,
+            b = 50,
+            msg = "The percentage of missing values in 'trip_id' column is greater than 50%."
+        )
+
     def test_null_route_trip_id(self):
         both_null = self.data[self.data['route_id'].isnull() & self.data['trip_id'].isnull()]
         self.assertTrue(
-            expr = both_null.empty, 
+            expr = both_null.empty,
             msg = "There are missing values in both 'route_id' and 'trip_id'."
         )
 
@@ -234,7 +266,7 @@ class TestMissingness(TestData):
 
 ## test spatial point accuracy
 class TestSpatialPoint(TestData):
-    def __init__(self, data, iata_id = None, gtfs_path = None, dist_thres = 30,
+    def __init__(self, data, iata_id = None, iata_path = None, gtfs_path = None, dist_thres = 25,
         methodName = 'runTest'):
         super(TestSpatialPoint, self).__init__(data, methodName)
         self.iata_id = iata_id
@@ -257,10 +289,26 @@ class TestSpatialPoint(TestData):
         for subdir, dirs, files in os.walk(self.gtfs_path):
             for i in files:
                 if i == 'shapes.txt':
-                    df = pd.read_csv(os.path.join(subdir, i))
+                    df = pd.read_csv(
+                        filepath_or_buffer = os.path.join(subdir, i),
+                        low_memory = False,
+                        dtype = {
+                            'vehicle_id': str,
+                            'trip_id': str,
+                            'route_id': str
+                            }
+                        )
                     self.shapes_df = pd.concat([self.shapes_df, df])
                 elif i == 'trips.txt':
-                    df = pd.read_csv(os.path.join(subdir, i))
+                    df = pd.read_csv(
+                        filepath_or_buffer = os.path.join(subdir, i),
+                        low_memory = False,
+                        dtype = {
+                            'vehicle_id': str,
+                            'trip_id': str,
+                            'route_id': str
+                            }
+                        )
                     self.trips_df = pd.concat([self.trips_df, df])
 
         ## omit duplicates
@@ -278,30 +326,28 @@ class TestSpatialPoint(TestData):
             elif isinstance(self.iata_id, list):
                 self.data = self.data[self.data['iata_id'].isin(self.iata_id)]
 
-        ## force string data types on route and trip ids
-        self.data.loc[:, 'route_id'] = self.data['route_id'].astype(str)
-        self.data.loc[:, 'trip_id'] = self.data['trip_id'].astype(str)
-        self.trips_df.loc[:, 'route_id'] = self.trips_df['route_id'].astype(str)
-        self.trips_df.loc[:, 'trip_id'] = self.trips_df['trip_id'].astype(str)
-
         ## merge idle data with trips data
         self.merged_df = self.data.merge(
-            right=self.trips_df[['route_id', 'trip_id', 'shape_id']],
-            how='left',
-            left_on='route_id',
-            right_on='route_id'
+            right = self.trips_df[['route_id', 'trip_id', 'shape_id']],
+            how = 'left',
+            left_on = 'route_id',
+            right_on = 'route_id'
         )
 
-        # In cases where route_id is not available, use trip_id
+        ## when route_id is not available use trip_id
         self.merged_df = self.merged_df.combine_first(
             self.data.merge(
-                right=self.trips_df[['trip_id', 'shape_id']],
-                how='left',
-                left_on='trip_id',
-                right_on='trip_id'
+                right = self.trips_df[['trip_id', 'shape_id']],
+                how = 'left',
+                left_on = 'trip_id',
+                right_on = 'trip_id'
             )
         )
 
+        ## drop rows with missing shape_id and clean up
+        if len(self.merged_df['shape_id']) == 0:
+            return None
+        
         self.merged_df.dropna(subset = ['shape_id'], inplace = True)
 
         ## use float32 to save memory, optimize speed
@@ -346,7 +392,8 @@ class TestSpatialPoint(TestData):
         for total, within_dist_thres in results:
             total_events += total
             within_shape += within_dist_thres
-        return (within_shape / total_events) * 100 if total_events > 0 else 0
+        accuracy = (within_shape / total_events) * 100 if total_events > 0 else None
+        return accuracy, total_events
 
     ## test spatial points
     def test_lat_zero(self):
@@ -392,21 +439,86 @@ class TestSpatialPoint(TestData):
         )
 
     def test_shapes_path(self):
-        within_shape_perc = round(self.comp_perc())
-        print("{x} percent of idling events within {y} meter threshold: {z}%".format(
-                x = self.iata_id,
-                y = self.dist_thres,
-                z = round(within_shape_perc)
+        accuracy, _ = self.comp_perc()
+        if accuracy is None:
+            print("{x} has no matching shape paths.".format(x = self.iata_id))
+        else:
+            print("{x} percent of idling events outside {y} meter distance threshold: {z}%".format(
+                    x = self.iata_id,
+                    y = self.dist_thres,
+                    z = round(number = 100 - accuracy, ndigits = 2)
+                )
             )
+            self.assertGreaterEqual(
+                a = round(accuracy),
+                b = 50,
+                msg = "{x} percent of idling events outside {y} meter distance threshold violated: {z}%".format(
+                    x = self.iata_id,
+                    y = self.dist_thres,
+                    z = round(number = 100 - accuracy, ndigits = 2)
+                    )
+                )
+
+class TestSpatialPointMean(TestSpatialPoint):
+    def __init__(self, data, iata_path, *args, **kwargs):
+        super().__init__(data, iata_path, *args, **kwargs)
+        self.data = data
+        self.iata_path = iata_path
+
+    def shapes_path_loop(self, data, iata_path):
+        results = {}
+        for iata_id, gtfs_path in iata_path:
+            test = TestSpatialPoint(
+                data = data,
+                iata_id = iata_id,
+                gtfs_path = gtfs_path,
+                methodName = 'test_shapes_path'
+            )
+            accuracy, total_events = test.comp_perc()
+            if accuracy is not None:
+                results[iata_id] = {'accuracy': accuracy, 'observations': total_events}
+        return results
+
+    def test_shapes_path_mean_unweight(self):
+        results = self.shapes_path_loop(
+            data = self.data,
+            iata_path = self.iata_path
         )
-        self.assertGreaterEqual(
-            a = within_shape_perc,
-            b = 85,
-            msg = "{x} percent of idling events within {y} meter threshold violated: {z}%".format(
-                x = self.iata_id,
-                y = self.dist_thres,
-                z = round(within_shape_perc)
+        n_results = len(results)
+        mean_unweight = sum(i['accuracy'] for i in results.values()) / n_results if n_results > 0 else None
+        if mean_unweight is None:
+            print("No matching shape paths found.")
+        else:
+            print("Mean unweighted spatial point error: {x}%".format(
+                x = round(number = 100 - mean_unweight, ndigits = 2)
+                )
             )
+
+        self.assertGreaterEqual(
+            a = mean_unweight, 
+            b = 85,
+            msg = "Mean unweight is less than 85"
+        )
+
+    def test_shapes_path_mean_weight(self):
+        results = self.shapes_path_loop(
+            data = self.data,
+            iata_path = self.iata_path
+        )
+        n_results = sum(i['observations'] for i in results.values())
+        mean_weight = sum(i['accuracy'] * i['observations'] / n_results for i in results.values())
+        if mean_weight is None:
+            print("No matching shape paths found.")
+        else:
+            print("Mean weighted spatial point error: {x}%".format(
+                x = round(number = 100 - mean_weight, ndigits = 2)
+                )
+            )
+
+        self.assertGreaterEqual(
+            a = mean_weight,
+            b = 85,
+            msg = "Weighted sum is less than 85"
         )
 
 ## test temporal contiguity
@@ -428,8 +540,13 @@ class TestDateTime(TestData):
     def test_datetime_24h(self):
         datetime_min = self.data['datetime'].min()
         datetime_max = self.data['datetime'].max()
-        datetime_24h = 86400 - 600  ## 24hrs, 10min error tolerance
+        datetime_24h = 86400 - 600  ## 10min error tolerance
         datetime_gap = datetime_max - datetime_min
+
+        print("Datetime range from first to last observation:  {x} sec.".format(
+            x = datetime_gap
+            )
+        )
 
         self.assertGreater(
             a = datetime_gap,
@@ -437,14 +554,44 @@ class TestDateTime(TestData):
             msg = "Datetime difference is not approximately 24 hours."
         )
 
+    def test_datetime_down(self):
+        self.data.sort_values(by = 'datetime', inplace = True)
+        time_diff = self.data['datetime'].diff().fillna(0)
+        max_gap = 60  ## 1 min datetime gap counted as downtime
+        time_down = time_diff[time_diff > max_gap]
+        time_down_total = time_down.sum()
+        time_total = self.data['datetime'].max() - self.data['datetime'].min()
+        time_down_perc = (time_down_total / time_total) * 100 if time_total > 0 else None
+        
+        if time_down_perc is None:
+            print("Error in downtime violation.")
+        else:
+            print("Datetime contiguity downtime: {x}%".format(
+                x = round(number = time_down_perc, ndigits = 2)
+                )
+            )
+
+        self.assertLessEqual(
+            a = time_down_perc,
+            b = 5,
+            msg = "Datetime contiguity downtime violated beyond 5% tolerance."
+        )
+
     def test_datetime_gap(self):
         self.data.sort_values(by = 'datetime', inplace = True)
         time_diff = self.data['datetime'].diff().fillna(0)
         max_gap = 600  ## 10min max gap between new observations
-        time_gaps = time_diff > max_gap
+        time_gap = time_diff > max_gap
+        time_gap_max = time_diff.max()
+
+        if time_diff.any():
+            print("Datetime contiguity maximum gap: {x} sec.".format(
+                x = time_gap_max
+                )
+            )
 
         self.assertFalse(
-            expr = time_gaps.any(), 
+            expr = time_gap.any(), 
             msg = "Datetime time contiguity violated beyond 10 minutes."
         )
 
@@ -471,14 +618,17 @@ class TestDuration(TestData):
         op_time['min'] = op_time['min'] - op_time_min['duration']
         op_time['id_time'] = self.data.groupby('vehicle_id')['duration'].sum()
         op_time['op_time'] = op_time['max'] - op_time['min']
-
         id_time_prc = (self.data.groupby('vehicle_id')['duration'].sum() / op_time['op_time']) * 100
-        id_time_avg = round(id_time_prc.mean())
-        print('Average proportion of idle time: ' + str(id_time_avg) + '%')
+        id_time_avg = round(number = id_time_prc.mean(), ndigits = 2)
+        
+        print("Average proportion of idle time: {x} %".format(
+            x = id_time_avg
+            )
+        )
 
-        ## est 30% to 45% idle time taken from existing studies
-        id_time_avg_min = 15  ## -15% of lower bound est 30%
-        id_time_avg_max = 60  ## +15% of upper bound est 45%
+        ## est 30% to 44% idle time taken from existing studies
+        id_time_avg_min = 50  ## +20% of lower bound est 30%
+        id_time_avg_max = 64  ## +20% of upper bound est 44%
 
         self.assertGreaterEqual(
             a = id_time_avg,
@@ -495,9 +645,9 @@ class TestDuration(TestData):
             )
         )
 
-    ## test idle duration average adjusted for 5 min or longer
+    ## test idle duration average adjusted for longer than 5 min
     def test_duration_avg_adj(self):
-        id_five = self.data[self.data['duration'] >= 300]  ## 5 min
+        id_five = self.data[self.data['duration'] > 300]  ## 5 min
         op_time = self.data.groupby('vehicle_id')['datetime'].agg(['min', 'max'])
         op_time_min = id_five.sort_values('datetime').groupby('vehicle_id').first()
         op_time['min'] = op_time['min'] - op_time_min['duration']
@@ -505,12 +655,12 @@ class TestDuration(TestData):
         op_time['op_time'] = op_time['max'] - op_time['min']
 
         id_time_prc_adj = (id_five.groupby('vehicle_id')['duration'].sum() / op_time['op_time']) * 100
-        id_time_prc_adj = round(id_time_prc_adj.mean())
-        print('Average proportion of idle time 5 minutes or longer: ' + str(id_time_prc_adj) + '%')
+        id_time_prc_adj = round(number = id_time_prc_adj.mean(), ndigits = 2)
+        print('Average proportion of idle time longer than 5 minutes: ' + str(id_time_prc_adj) + '%')
 
-        ## est 30% to 45% idle time taken from existing studies
+        ## est 30% to 44% idle time taken from existing studies
         id_time_prc_adj_min = 30  ## lower bound est 30% (no adjustment)
-        id_time_prc_adj_max = 45  ## upper bound est 45% (no adjustment)
+        id_time_prc_adj_max = 44  ## upper bound est 44% (no adjustment)
 
         self.assertGreaterEqual(
             a = id_time_prc_adj,
@@ -532,198 +682,714 @@ if __name__ == '__main__':
 
     ## load test data
     cwd = os.getcwd()
-    data = pd.read_csv(filepath_or_buffer = cwd + '/rdb/test/data/test-data-c.csv')
-
-    ## pre-process data
-    data['trip_id'] = data['trip_id'].astype(str)
-    data['route_id'] = data['route_id'].astype(str)
+    # path = '/rdb/test/data/test-data-a.csv'
+    path = '/rdb/test/data/test-data-b.csv'
+    # path = '/rdb/test/data/test-data-c.csv'
+    
+    data = pd.read_csv(
+        filepath_or_buffer = cwd + path,
+        low_memory = False,
+        dtype = {
+            'vehicle_id': str,
+            'trip_id': str,
+            'route_id': str,
+            'latitude': float,
+            'longitude': float,
+            'datetime': int,
+            'duration': int
+            }
+        )
 
     ## test suite
     suite = unittest.TestSuite()
 
     ## data types
-    # suite.addTest(TestDataType(data, 'test_data_type'))
-    # suite.addTest(TestDataType(data, 'test_data_type_iata_id'))
-    # suite.addTest(TestDataType(data, 'test_data_type_agency'))
-    # suite.addTest(TestDataType(data, 'test_data_type_city'))
-    # suite.addTest(TestDataType(data, 'test_data_type_country'))
-    # suite.addTest(TestDataType(data, 'test_data_type_region'))
-    # suite.addTest(TestDataType(data, 'test_data_type_continent'))
-    # suite.addTest(TestDataType(data, 'test_data_type_vehicle_id'))
-    # suite.addTest(TestDataType(data, 'test_data_type_trip_id'))
-    # suite.addTest(TestDataType(data, 'test_data_type_route_id'))
-    # suite.addTest(TestDataType(data, 'test_data_type_lat'))
-    # suite.addTest(TestDataType(data, 'test_data_type_lon'))
-    # suite.addTest(TestDataType(data, 'test_data_type_datetime'))
-    # suite.addTest(TestDataType(data, 'test_data_type_duration'))
+    suite.addTest(TestDataType(data, 'test_data_type'))
+    suite.addTest(TestDataType(data, 'test_data_type_iata_id'))
+    suite.addTest(TestDataType(data, 'test_data_type_agency'))
+    suite.addTest(TestDataType(data, 'test_data_type_city'))
+    suite.addTest(TestDataType(data, 'test_data_type_country'))
+    suite.addTest(TestDataType(data, 'test_data_type_region'))
+    suite.addTest(TestDataType(data, 'test_data_type_continent'))
+    suite.addTest(TestDataType(data, 'test_data_type_vehicle_id'))
+    suite.addTest(TestDataType(data, 'test_data_type_trip_id'))
+    suite.addTest(TestDataType(data, 'test_data_type_route_id'))
+    suite.addTest(TestDataType(data, 'test_data_type_lat'))
+    suite.addTest(TestDataType(data, 'test_data_type_lon'))
+    suite.addTest(TestDataType(data, 'test_data_type_datetime'))
+    suite.addTest(TestDataType(data, 'test_data_type_duration'))
 
-    # ## duplication & missingness
-    # suite.addTest(TestDuplication(data, 'test_duplicate_cols'))
-    # suite.addTest(TestDuplication(data, 'test_duplicate_rows'))
+    ## duplication & missingness
+    suite.addTest(TestDuplication(data, 'test_duplicate_cols'))
+    suite.addTest(TestDuplication(data, 'test_duplicate_rows'))
 
-    # suite.addTest(test=  TestMissingness(data, 'test_null_cols'))
-    # suite.addTest(test=  TestMissingness(data, 'test_null_agency'))
-    # suite.addTest(test=  TestMissingness(data, 'test_null_city'))
-    # suite.addTest(test=  TestMissingness(data, 'test_null_country'))
-    # suite.addTest(test=  TestMissingness(data, 'test_null_region'))
-    # suite.addTest(test=  TestMissingness(data, 'test_null_continent'))
-    # suite.addTest(test=  TestMissingness(data, 'test_null_vehicle_id'))
-    # suite.addTest(test=  TestMissingness(data, 'test_null_route_trip_id'))
-    # suite.addTest(test=  TestMissingness(data, 'test_null_lat'))
-    # suite.addTest(test=  TestMissingness(data, 'test_null_lon'))
-    # suite.addTest(test=  TestMissingness(data, 'test_null_datetime'))
-    # suite.addTest(test=  TestMissingness(data, 'test_null_duration'))
+    suite.addTest(TestMissingness(data, 'test_null_cols'))
+    suite.addTest(TestMissingness(data, 'test_null_agency'))
+    suite.addTest(TestMissingness(data, 'test_null_city'))
+    suite.addTest(TestMissingness(data, 'test_null_country'))
+    suite.addTest(TestMissingness(data, 'test_null_region'))
+    suite.addTest(TestMissingness(data, 'test_null_continent'))
+    suite.addTest(TestMissingness(data, 'test_null_vehicle_id'))
+    suite.addTest(TestMissingness(data, 'test_null_route_id'))
+    suite.addTest(TestMissingness(data, 'test_null_trip_id'))
+    suite.addTest(TestMissingness(data, 'test_null_route_trip_id'))
+    suite.addTest(TestMissingness(data, 'test_null_lat'))
+    suite.addTest(TestMissingness(data, 'test_null_lon'))
+    suite.addTest(TestMissingness(data, 'test_null_datetime'))
+    suite.addTest(TestMissingness(data, 'test_null_duration'))
 
-    # ## spatial point accuracy
-    # suite.addTest(TestSpatialPoint(data = data, methodName = 'test_lat_zero'))
-    # suite.addTest(TestSpatialPoint(data = data, methodName = 'test_lon_zero'))
-    # suite.addTest(TestSpatialPoint(data = data, methodName = 'test_lat_max'))
-    # suite.addTest(TestSpatialPoint(data = data, methodName = 'test_lat_min'))
-    # suite.addTest(TestSpatialPoint(data = data, methodName = 'test_lon_max'))
-    # suite.addTest(TestSpatialPoint(data = data, methodName = 'test_lon_min'))
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'NYC',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-east/nyc/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'PHL',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-east/phl/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'DCA',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-east/dca/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'BOS',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-east/bos/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'PIT',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-east/pit/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'LAX',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-west/lax/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'SFO',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-west/sfo/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'SAN',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-west/san/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'SEA',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-west/sea/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'SMF',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-west/smf/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'PDX',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-west/pdx/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'ATL',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-suth/atl/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'MIA',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-suth/mia/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'TPA',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-suth/tpa/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'SDF',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-suth/sdf/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
-    # suite.addTest(TestSpatialPoint(
-    #     data = data,
-    #     iata_id = 'BNA',
-    #     gtfs_path = cwd + '/rdb/test/shapes/us-suth/bna/',
-    #     methodName = 'test_shapes_path'
-    #     )
-    # )
+    ## spatial point accuracy
+    suite.addTest(TestSpatialPoint(data = data, methodName = 'test_lat_zero'))
+    suite.addTest(TestSpatialPoint(data = data, methodName = 'test_lon_zero'))
+    suite.addTest(TestSpatialPoint(data = data, methodName = 'test_lat_max'))
+    suite.addTest(TestSpatialPoint(data = data, methodName = 'test_lat_min'))
+    suite.addTest(TestSpatialPoint(data = data, methodName = 'test_lon_max'))
+    suite.addTest(TestSpatialPoint(data = data, methodName = 'test_lon_min'))
+
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'NYC',
+        gtfs_path = cwd + '/rdb/test/routes/us-east/nyc/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'PHL',
+        gtfs_path = cwd + '/rdb/test/routes/us-east/phl/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'DCA',
+        gtfs_path = cwd + '/rdb/test/routes/us-east/dca/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'BOS',
+        gtfs_path = cwd + '/rdb/test/routes/us-east/bos/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'PIT',
+        gtfs_path = cwd + '/rdb/test/routes/us-east/pit/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'LAX',
+        gtfs_path = cwd + '/rdb/test/routes/us-west/lax/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'SFO',
+        gtfs_path = cwd + '/rdb/test/routes/us-west/sfo/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'SAN',
+        gtfs_path = cwd + '/rdb/test/routes/us-west/san/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'SEA',
+        gtfs_path = cwd + '/rdb/test/routes/us-west/sea/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'SMF',
+        gtfs_path = cwd + '/rdb/test/routes/us-west/smf/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'PDX',
+        gtfs_path = cwd + '/rdb/test/routes/us-west/pdx/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'ATL',
+        gtfs_path = cwd + '/rdb/test/routes/us-suth/atl/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'MIA',
+        gtfs_path = cwd + '/rdb/test/routes/us-suth/mia/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'TPA',
+        gtfs_path = cwd + '/rdb/test/routes/us-suth/tpa/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'SDF',
+        gtfs_path = cwd + '/rdb/test/routes/us-suth/sdf/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'BNA',
+        gtfs_path = cwd + '/rdb/test/routes/us-suth/bna/',
+        methodName = 'test_shapes_path'
+        )
+    )
     suite.addTest(TestSpatialPoint(
         data = data,
         iata_id = 'MSP',
-        gtfs_path = cwd + '/rdb/test/shapes/us-cent/msp/',
+        gtfs_path = cwd + '/rdb/test/routes/us-cent/msp/',
         methodName = 'test_shapes_path'
         )
     )
     suite.addTest(TestSpatialPoint(
         data = data,
         iata_id = 'STL',
-        gtfs_path = cwd + '/rdb/test/shapes/us-cent/stl/',
+        gtfs_path = cwd + '/rdb/test/routes/us-cent/stl/',
         methodName = 'test_shapes_path'
         )
     )
-    ## temporal contiguity
-    # suite.addTest(TestDateTime(data, 'test_datetime_zero'))
-    # suite.addTest(TestDateTime(data, 'test_datetime_neg'))
-    # suite.addTest(TestDateTime(data, 'test_datetime_24h'))
-    # suite.addTest(TestDateTime(data, 'test_datetime_gap'))
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'MSN',
+        gtfs_path = cwd + '/rdb/test/routes/us-cent/msn/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'CMH',
+        gtfs_path = cwd + '/rdb/test/routes/us-cent/cmh/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'DSM',
+        gtfs_path = cwd + '/rdb/test/routes/us-cent/dsm/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'DEN',
+        gtfs_path = cwd + '/rdb/test/routes/us-mntn/den/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'PHX',
+        gtfs_path = cwd + '/rdb/test/routes/us-mntn/phx/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'SAT',
+        gtfs_path = cwd + '/rdb/test/routes/us-mntn/sat/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'AUS',
+        gtfs_path = cwd + '/rdb/test/routes/us-mntn/aus/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    # suite.addTest(TestSpatialPoint(
+    #     data = data,
+    #     iata_id = 'BIL',
+    #     gtfs_path = cwd + '/rdb/test/routes/us-mntn/bil/',
+    #     methodName = 'test_shapes_path'
+    #     )
+    # )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'YUL',
+        gtfs_path = cwd + '/rdb/test/routes/ca-east/yul/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'YYZ',
+        gtfs_path = cwd + '/rdb/test/routes/ca-east/yyz/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'YHM',
+        gtfs_path = cwd + '/rdb/test/routes/ca-east/yhm/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'YHZ',
+        gtfs_path = cwd + '/rdb/test/routes/ca-east/yhz/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'YQT',
+        gtfs_path = cwd + '/rdb/test/routes/ca-east/yqt/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'YVR',
+        gtfs_path = cwd + '/rdb/test/routes/ca-west/yvr/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'YYC',
+        gtfs_path = cwd + '/rdb/test/routes/ca-west/yyc/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'YEG',
+        gtfs_path = cwd + '/rdb/test/routes/ca-west/yeg/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'YXE',
+        gtfs_path = cwd + '/rdb/test/routes/ca-west/yxe/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'AMS',
+        gtfs_path = cwd + '/rdb/test/routes/eu-west/ams/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'DUB',
+        gtfs_path = cwd + '/rdb/test/routes/eu-west/dub/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    # ## incomplete test data (invalid mapping route_ids / trip_ids to shape_ids)
+    # suite.addTest(TestSpatialPoint(
+    #     data = data,
+    #     iata_id = 'ARN',
+    #     gtfs_path = cwd + '/rdb/test/routes/eu-west/arn/',
+    #     methodName = 'test_shapes_path'
+    #     )
+    # )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'HEL',
+        gtfs_path = cwd + '/rdb/test/routes/eu-west/hel/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'FCO',
+        gtfs_path = cwd + '/rdb/test/routes/eu-west/fco/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    # ## incomplete test data (invalid mapping route_ids / trip_ids to shape_ids)
+    # suite.addTest(TestSpatialPoint(
+    #     data = data,
+    #     iata_id = 'WAW',
+    #     gtfs_path = cwd + '/rdb/test/routes/eu-cent/waw/',
+    #     methodName = 'test_shapes_path'
+    #     )
+    # )
+    # ## incomplete test data (invalid mapping route_ids / trip_ids to shape_ids)
+    # suite.addTest(TestSpatialPoint(
+    #     data = data,
+    #     iata_id = 'KRK',
+    #     gtfs_path = cwd + '/rdb/test/routes/eu-cent/krk/',
+    #     methodName = 'test_shapes_path'
+    #     )
+    # )
+    # ## incomplete test data (invalid mapping route_ids / trip_ids to shape_ids)
+    # suite.addTest(TestSpatialPoint(
+    #     data = data,
+    #     iata_id = 'GDN',
+    #     gtfs_path = cwd + '/rdb/test/routes/eu-cent/gdn/',
+    #     methodName = 'test_shapes_path'
+    #     )
+    # )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'PRG',
+        gtfs_path = cwd + '/rdb/test/routes/eu-cent/prg/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'SYD',
+        gtfs_path = cwd + '/rdb/test/routes/oc-full/syd/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'BNE',
+        gtfs_path = cwd + '/rdb/test/routes/oc-full/bne/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'ADL',
+        gtfs_path = cwd + '/rdb/test/routes/oc-full/adl/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'AKL',
+        gtfs_path = cwd + '/rdb/test/routes/oc-full/akl/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    suite.addTest(TestSpatialPoint(
+        data = data,
+        iata_id = 'CHC',
+        gtfs_path = cwd + '/rdb/test/routes/oc-full/chc/',
+        methodName = 'test_shapes_path'
+        )
+    )
+    # ## incomplete test data (no shapes.txt file)
+    # suite.addTest(TestSpatialPoint(
+    #     data = data,
+    #     iata_id = 'DEL',
+    #     gtfs_path = cwd + '/rdb/test/routes/as-full/del/',
+    #     methodName = 'test_shapes_path'
+    #     )
+    # )
 
-    # ## duration expectation
-    # suite.addTest(TestDuration(data, 'test_duration_zero'))
-    # suite.addTest(TestDuration(data, 'test_duration_neg'))
-    # suite.addTest(TestDuration(data, 'test_duration_avg'))
-    # suite.addTest(TestDuration(data, 'test_duration_avg_adj'))
+    ## iata id to path mapping
+    iata_path_us_east = (
+        ('NYC', cwd + '/rdb/test/routes/us-east/nyc/'),
+        ('PHL', cwd + '/rdb/test/routes/us-east/phl/'),
+        ('DCA', cwd + '/rdb/test/routes/us-east/dca/'),
+        ('BOS', cwd + '/rdb/test/routes/us-east/bos/'),
+        ('PIT', cwd + '/rdb/test/routes/us-east/pit/')
+    )
+
+    iata_path_us_west = (
+        ('LAX', cwd + '/rdb/test/routes/us-west/lax/'),
+        ('SFO', cwd + '/rdb/test/routes/us-west/sfo/'),
+        ('SAN', cwd + '/rdb/test/routes/us-west/san/'),
+        ('SEA', cwd + '/rdb/test/routes/us-west/sea/'),
+        ('SMF', cwd + '/rdb/test/routes/us-west/smf/'),
+        ('PDX', cwd + '/rdb/test/routes/us-west/pdx/')
+    )
+
+    iata_path_us_suth = (
+        ('ATL', cwd + '/rdb/test/routes/us-suth/atl/'),
+        ('MIA', cwd + '/rdb/test/routes/us-suth/mia/'),
+        ('TPA', cwd + '/rdb/test/routes/us-suth/tpa/'),
+        ('SDF', cwd + '/rdb/test/routes/us-suth/sdf/'),
+        ('BNA', cwd + '/rdb/test/routes/us-suth/bna/')
+    )
+
+    iata_path_us_cent = (
+        ('MSP', cwd + '/rdb/test/routes/us-cent/msp/'),
+        ('STL', cwd + '/rdb/test/routes/us-cent/stl/'),
+        ('MSN', cwd + '/rdb/test/routes/us-cent/msn/'),
+        ('CMH', cwd + '/rdb/test/routes/us-cent/cmh/'),
+        ('DSM', cwd + '/rdb/test/routes/us-cent/dsm/')
+    )
+
+    iata_path_us_mntn = (
+        ('DEN', cwd + '/rdb/test/routes/us-mntn/den/'),
+        ('PHX', cwd + '/rdb/test/routes/us-mntn/phx/'),
+        ('SAT', cwd + '/rdb/test/routes/us-mntn/sat/'),
+        ('AUS', cwd + '/rdb/test/routes/us-mntn/aus/')
+        # ('BIL', cwd + '/rdb/test/routes/us-mntn/bil/')
+    )
+
+    iata_path_ca_east = (
+        ('YUL', cwd + '/rdb/test/routes/ca-east/yul/'),
+        ('YYZ', cwd + '/rdb/test/routes/ca-east/yyz/'),
+        ('YHM', cwd + '/rdb/test/routes/ca-east/yhm/'),
+        ('YHZ', cwd + '/rdb/test/routes/ca-east/yhz/'),
+        ('YQT', cwd + '/rdb/test/routes/ca-east/yqt/')
+    )
+
+    iata_path_ca_west = (
+        ('YVR', cwd + '/rdb/test/routes/ca-west/yvr/'),
+        ('YYC', cwd + '/rdb/test/routes/ca-west/yyc/'),
+        ('YEG', cwd + '/rdb/test/routes/ca-west/yeg/'),
+        ('YXE', cwd + '/rdb/test/routes/ca-west/yxe/')
+    )
+
+    iata_path_eu_west = (
+        ('AMS', cwd + '/rdb/test/routes/eu-west/ams/'),
+        # ('ARN', cwd + '/rdb/test/routes/eu-west/arn/'),
+        ('HEL', cwd + '/rdb/test/routes/eu-west/hel/'),
+        ('DUB', cwd + '/rdb/test/routes/eu-west/dub/'),
+        ('FCO', cwd + '/rdb/test/routes/eu-west/fco/')
+    )
+
+    iata_path_eu_cent = (
+        # ('WAW', cwd + '/rdb/test/routes/eu-cent/waw/'),
+        # ('KRK', cwd + '/rdb/test/routes/eu-cent/krk/'),
+        # ('GDN', cwd + '/rdb/test/routes/eu-cent/gdn/'),
+        ('PRG', cwd + '/rdb/test/routes/eu-cent/prg/')
+    )
+
+    iata_path_oceania = (
+        ('SYD', cwd + '/rdb/test/routes/oc-full/syd/'),
+        ('BNE', cwd + '/rdb/test/routes/oc-full/bne/'),
+        ('ADL', cwd + '/rdb/test/routes/oc-full/adl/'),
+        ('AKL', cwd + '/rdb/test/routes/oc-full/akl/'), 
+        ('CHC', cwd + '/rdb/test/routes/oc-full/chc/')
+    )
+
+    # iata_path_asia = (
+    #    ('DEL', cwd + '/rdb/test/routes/as-full/del/')
+    # )
+
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_us_east,
+        methodName = 'test_shapes_path_mean_unweight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_us_east,
+        methodName = 'test_shapes_path_mean_weight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_us_west,
+        methodName = 'test_shapes_path_mean_unweight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_us_west,
+        methodName = 'test_shapes_path_mean_weight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_us_suth,
+        methodName = 'test_shapes_path_mean_unweight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_us_suth,
+        methodName = 'test_shapes_path_mean_weight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_us_cent,
+        methodName = 'test_shapes_path_mean_unweight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_us_cent,
+        methodName = 'test_shapes_path_mean_weight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_us_mntn,
+        methodName = 'test_shapes_path_mean_unweight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_us_mntn,
+        methodName = 'test_shapes_path_mean_weight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_ca_east,
+        methodName = 'test_shapes_path_mean_unweight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_ca_east,
+        methodName = 'test_shapes_path_mean_weight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_ca_west,
+        methodName = 'test_shapes_path_mean_unweight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_ca_west,
+        methodName = 'test_shapes_path_mean_weight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_eu_west,
+        methodName = 'test_shapes_path_mean_unweight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_eu_west,
+        methodName = 'test_shapes_path_mean_weight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_eu_cent,
+        methodName = 'test_shapes_path_mean_unweight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_eu_cent,
+        methodName = 'test_shapes_path_mean_weight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_oceania,
+        methodName = 'test_shapes_path_mean_unweight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path_oceania,
+        methodName = 'test_shapes_path_mean_weight'
+        )
+    )
+
+    iata_path = (
+        ('NYC', cwd + '/rdb/test/routes/us-east/nyc/'),
+        ('PHL', cwd + '/rdb/test/routes/us-east/phl/'),
+        ('DCA', cwd + '/rdb/test/routes/us-east/dca/'),
+        ('BOS', cwd + '/rdb/test/routes/us-east/bos/'),
+        ('PIT', cwd + '/rdb/test/routes/us-east/pit/'),
+        ('LAX', cwd + '/rdb/test/routes/us-west/lax/'),
+        ('SFO', cwd + '/rdb/test/routes/us-west/sfo/'),
+        ('SAN', cwd + '/rdb/test/routes/us-west/san/'),
+        ('SEA', cwd + '/rdb/test/routes/us-west/sea/'),
+        ('SMF', cwd + '/rdb/test/routes/us-west/smf/'),
+        ('PDX', cwd + '/rdb/test/routes/us-west/pdx/'),
+        ('ATL', cwd + '/rdb/test/routes/us-suth/atl/'),
+        ('MIA', cwd + '/rdb/test/routes/us-suth/mia/'),
+        ('TPA', cwd + '/rdb/test/routes/us-suth/tpa/'),
+        ('SDF', cwd + '/rdb/test/routes/us-suth/sdf/'),
+        ('BNA', cwd + '/rdb/test/routes/us-suth/bna/'),
+        ('MSP', cwd + '/rdb/test/routes/us-cent/msp/'),
+        ('STL', cwd + '/rdb/test/routes/us-cent/stl/'),
+        ('MSN', cwd + '/rdb/test/routes/us-cent/msn/'),
+        ('CMH', cwd + '/rdb/test/routes/us-cent/cmh/'),
+        ('DSM', cwd + '/rdb/test/routes/us-cent/dsm/'),
+        ('DEN', cwd + '/rdb/test/routes/us-mntn/den/'),
+        ('PHX', cwd + '/rdb/test/routes/us-mntn/phx/'),
+        ('SAT', cwd + '/rdb/test/routes/us-mntn/sat/'),
+        ('AUS', cwd + '/rdb/test/routes/us-mntn/aus/'),
+        # ('BIL', cwd + '/rdb/test/routes/us-mntn/bil/'),
+        ('YUL', cwd + '/rdb/test/routes/ca-east/yul/'),
+        ('YYZ', cwd + '/rdb/test/routes/ca-east/yyz/'),
+        ('YHM', cwd + '/rdb/test/routes/ca-east/yhm/'),
+        ('YHZ', cwd + '/rdb/test/routes/ca-east/yhz/'),
+        ('YQT', cwd + '/rdb/test/routes/ca-east/yqt/'),
+        ('YVR', cwd + '/rdb/test/routes/ca-west/yvr/'),
+        ('YYC', cwd + '/rdb/test/routes/ca-west/yyc/'),
+        ('YEG', cwd + '/rdb/test/routes/ca-west/yeg/'),
+        ('YXE', cwd + '/rdb/test/routes/ca-west/yxe/'),
+        ('AMS', cwd + '/rdb/test/routes/eu-west/ams/'),
+        # ('ARN', cwd + '/rdb/test/routes/eu-west/arn/'),
+        ('HEL', cwd + '/rdb/test/routes/eu-west/hel/'),
+        ('DUB', cwd + '/rdb/test/routes/eu-west/dub/'),
+        ('FCO', cwd + '/rdb/test/routes/eu-west/fco/'),
+        # ('WAW', cwd + '/rdb/test/routes/eu-cent/waw/'),
+        # ('KRK', cwd + '/rdb/test/routes/eu-cent/krk/'),
+        # ('GDN', cwd + '/rdb/test/routes/eu-cent/gdn/'),
+        ('PRG', cwd + '/rdb/test/routes/eu-cent/prg/'),
+        ('SYD', cwd + '/rdb/test/routes/oc-full/syd/'),
+        ('BNE', cwd + '/rdb/test/routes/oc-full/bne/'),
+        ('ADL', cwd + '/rdb/test/routes/oc-full/adl/'),
+        ('AKL', cwd + '/rdb/test/routes/oc-full/akl/'),
+        ('CHC', cwd + '/rdb/test/routes/oc-full/chc/')
+        # ('DEL', cwd + '/rdb/test/routes/as-full/del/')
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path,
+        methodName = 'test_shapes_path_mean_unweight'
+        )
+    )
+    suite.addTest(TestSpatialPointMean(
+        data = data,
+        iata_path = iata_path,
+        methodName = 'test_shapes_path_mean_weight'
+        )
+    )
+
+    ## temporal contiguity
+    suite.addTest(TestDateTime(data, 'test_datetime_zero'))
+    suite.addTest(TestDateTime(data, 'test_datetime_neg'))
+    suite.addTest(TestDateTime(data, 'test_datetime_24h'))
+    suite.addTest(TestDateTime(data, 'test_datetime_down'))
+    suite.addTest(TestDateTime(data, 'test_datetime_gap'))
+
+    ## duration expectation
+    suite.addTest(TestDuration(data, 'test_duration_zero'))
+    suite.addTest(TestDuration(data, 'test_duration_neg'))
+    suite.addTest(TestDuration(data, 'test_duration_avg'))
+    suite.addTest(TestDuration(data, 'test_duration_avg_adj'))
 
     ## conduct tests
     runner = unittest.TextTestRunner()
     runner.run(suite)
 
-    print('Number of observations: ' + str(len(data)))
+    # print('Number of observations: ' + str(len(data)))
     # print('Percentage of missing data: ' + str(round((data.isnull().sum().sum() / data.size * 100), 2)) + '%')
     # print('Date range of observations: ' + \
     #     str(datetime.utcfromtimestamp(data['datetime'].min()).strftime('%Y-%m-%d %H:%M:%S')) + ' to ' + \
