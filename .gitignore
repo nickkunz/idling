@@ -14,6 +14,8 @@ rdb/src/__pycache__
 rdb/test/__pycache__
 rdb/test/routes/ca-east/yhm/shapes.txt
 rdb/test/routes/ca-east/yhm/trips.txt
+rdb/test/routes/ca-east/yhz/shapes.txt
+rdb/test/routes/ca-east/yhz/trips.txt
 rdb/test/routes/ca-east/yqt/shapes.txt
 rdb/test/routes/ca-east/yqt/trips.txt
 rdb/test/routes/ca-east/yul/shapes.txt
