@@ -5,6 +5,8 @@ ext/.env
 gui/.env
 rdb/.env
 rdb/src/__pycache__
+rdb/test/__pycache__
+rdb/test/routes
 sub/.env
 wrt/.env
 gui/node_modules
