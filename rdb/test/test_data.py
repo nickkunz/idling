@@ -460,18 +460,20 @@ class TestSpatialPoint(TestData):
                 )
 
 class TestSpatialPointMean(TestSpatialPoint):
-    def __init__(self, data, iata_path, *args, **kwargs):
-        super().__init__(data, iata_path, *args, **kwargs)
+    def __init__(self, data = None, iata_path = None, dist_thres = 25, *args, **kwargs):
+        super().__init__(data, iata_path, dist_thres, *args, **kwargs)
         self.data = data
         self.iata_path = iata_path
+        self.dist_thres = dist_thres
 
-    def shapes_path_loop(self, data, iata_path):
+    def shapes_path_loop(self, data, iata_path, dist_thres):
         results = {}
         for iata_id, gtfs_path in iata_path:
             test = TestSpatialPoint(
                 data = data,
                 iata_id = iata_id,
                 gtfs_path = gtfs_path,
+                dist_thres = dist_thres,
                 methodName = 'test_shapes_path'
             )
             accuracy, total_events = test.comp_perc()

@@ -1,12 +1,14 @@
+## libaries
 import sys
 import unittest
 from unittest.mock import patch
 
+## modules
 sys.path.insert(0, './')
 from rdb.src.read import ReadClient
 
+## tests
 class TestReadClient(unittest.TestCase):
-
     def setUp(self):
         self.client = ReadClient(
             db_name='test_db',
