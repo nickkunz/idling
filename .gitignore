@@ -5,7 +5,7 @@ ext/.env
 gui/.env
 sub/.env
 wrt/.env
-gui/node_modules    
+gui/node_modules
 gui/coverage
 gui/build
 
