@@ -10,17 +10,26 @@ This is an implementation of GRD-TRT-BUF-4I from the research in "Global Geoloca
 - __Interface__ (gui): Frontend data visualization and general project information.
 
 ### Version
+<!-- Via Appia 0.9.0 --> 
+<!-- Isidore 0.8.0 --> 
+<!-- Frontinus 0.7.0 --> 
+<!-- Anthemius 0.6.0 --> 
+<!-- Vitruvius 0.5.0 --> 
+<!-- Archimedes 0.4.0 --> 
+<!-- Qanats 0.3.0 --> 
+<!-- Eupalinos 0.2.0 -->
 Imhotep 0.1.0<br>
 _Updated: Feb. 2024_
 
 ## Dependencies
+0. Docker Desktop (Latest)
 1. OS: Ubuntu 20.04
 2. Language: Python 3.8
-3. Web App: Flask/Quart
-4. WSGI/ASGI: Gunicorn/Uvicorn
-5. Proxy Server: Nginx
+3. Web App: Flask 2.3.1 / Quart 0.18.3
+4. WSGI/ASGI: Gunicorn / Uvicorn (Latest)
+5. Proxy Server: Nginx (Latest)
 6. Database: PostgreSQL 16
-7. Interface: Node JS, React, Deck GL
+7. Frontend: React (17.0.2), Deck GL (8.9.33)
 
 _Note: All dependencies are installed automatically when built with containers._
 
