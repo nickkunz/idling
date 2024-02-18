@@ -1,6 +1,6 @@
 import React from "react";
 import { Route, Switch } from "react-router-dom";
-import LiveMap from "./pages/maps";
+import LiveMap from "./pages/Maps";
 
 const Routes = ({ selectedCity }) => {
     return (

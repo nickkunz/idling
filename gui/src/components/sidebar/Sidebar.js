@@ -17,7 +17,7 @@ import {
     SToggleThumb,
 } from "./styles";
 
-const Live = [
+const live = [
       { name: 'New York', iata_id: 'NYC', coordinates: { longitude: -74.0060, latitude: 40.7128 } },
       { name: 'Philadelphia', iata_id: 'PHL', coordinates: { longitude: -75.1652, latitude: 39.9526 } },
       { name: 'Washington D.C.', iata_id: 'DCA', coordinates: { longitude: -77.0369, latitude: 38.9072 } },
@@ -86,7 +86,7 @@ const Sidebar = ({ onCitySelect }) => {
 
     const linksArray = [
         {
-            label: "Live",
+            label: "live",
             icon: <FaMapMarkedAlt/>,
             to: "/",
             notification: 0,
@@ -121,15 +121,15 @@ const Sidebar = ({ onCitySelect }) => {
             <SDivider />
             {linksArray.map(({ icon, label, notification, to, action }) => (
             <SLinkContainer key={label} isActive={pathname === to}>
-                <SLink to={to} onClick={label === "Live" ? toggleCitiesDropdown : action || (() => {})}>
+                <SLink to={to} onClick={label === "live" ? toggleCitiesDropdown : action || (() => {})}>
                     <SLinkIcon>{icon}</SLinkIcon>
                     <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                         <SLinkLabel style={{ marginRight: '8px' }}>{label}</SLinkLabel>
-                        {label === "Live" && <FaChevronDown />}
+                        {label === "live" && <FaChevronDown />}
                     </div>
                     {!!notification && <SLinkNotification>{notification}</SLinkNotification>}
                 </SLink>
-                {label === "Live" && isCitiesDropdownOpen && (
+                {label === "live" && isCitiesDropdownOpen && (
                     <div style={{ 
                         padding: '12px', 
                         maxHeight: '300px', 
@@ -150,7 +150,7 @@ const Sidebar = ({ onCitySelect }) => {
                                 }
                             `}
                         </style>
-                        {Live.map((city) => (
+                        {live.map((city) => (
                         <p key={city.iata_id} style={{ margin: '5px 0' }} onClick={() => handleCityClick(city)}>
                             {city.name}
                         </p>
