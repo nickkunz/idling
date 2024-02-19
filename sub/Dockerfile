@@ -10,8 +10,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 ## install dependencies
 RUN apt-get update &&\
     apt-get upgrade -y &&\
-    apt-get install -y curl
-RUN apt-get install -y --no-install-recommends --fix-missing\
+    apt-get install -y curl software-properties-common &&\
+    apt-get install -y --no-install-recommends --fix-missing\
     python3-pip\
     gunicorn\
     nginx
@@ -30,7 +30,7 @@ RUN rm /etc/nginx/nginx.conf &&\
 
 ## copy server and wsgi configs
 COPY ./sub/conf/nginx.conf /etc/nginx/
-COPY ./conf/gunicorn.conf.py /etc/gunicorn/
+COPY ./sub/conf/gunicorn.conf.py /etc/gunicorn/
 
 ## symlink server configs
 RUN ln -s /etc/nginx/sites-available/nginx.conf /etc/nginx/sites-enabled/
@@ -38,7 +38,7 @@ RUN ln -s /etc/nginx/sites-available/nginx.conf /etc/nginx/sites-enabled/
 ## create non-root user and permissions
 RUN groupadd -g 999 group &&\
     useradd -u 999 -g group -d /home/user -m -s /bin/bash user &&\
-    chown -R user:group /var/lib/nginx /var/log/nginx /etc/nginx /run
+    chown -R user:group /var/lib/nginx /var/log/nginx /etc/nginx /run /etc/gunicorn/
 
 ## set working directory
 WORKDIR /app
@@ -50,10 +50,12 @@ COPY . /app
 RUN pip3 install -r ./sub/requirements.txt
 
 ## open port
-EXPOSE 4080
+EXPOSE 7080
 
 ## run non-root user
 USER user
 
 ## run application
 ENTRYPOINT ["bash", "./sub/start.sh"]
+
+## end container

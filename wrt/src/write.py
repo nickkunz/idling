@@ -1,185 +1,288 @@
-## libraries 
-import sys
+## libraries
+import os
+import time
 import json
+import logging
+import threading
+import socket
 import socketio
 import psycopg2
 
-## end point
-src = 'http://localhost:4080/'
-hst = 'localhost'
-hst_prt = 5432
+## params
+LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
 
-## websocket
-sio = socketio.Client(
-    reconnection = True,
-    reconnection_attempts = 3,
-    reconnection_delay = 1,
-    reconnection_delay_max = 5,
-    randomization_factor = 0.5
-)
+## logging
+fmt = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+hdlr = logging.StreamHandler()
+hdlr.setFormatter(fmt = fmt)
+logging.basicConfig(level = LOG_LEVEL, handlers = [hdlr])
+logger = logging.getLogger(name = __name__)
+logger.propagate = True
 
-## client interact
-@sio.event
-def connect():
-    print('Client connected to {x}'.format(x = src))
+## client to database
+class WriteClient():
+    def __init__(self,
+                 ws_host,
+                 db_name, db_user, db_pswd, db_host, db_port,
+                 sql_init, sql_agency, sql_events,
+                 recon_tries = 20, recon_delay = 1, recon_timeo = 120):
 
-@sio.event
-def connect_error():
-    print('Client connection error to {x}'.format(x = src))
+        self.ws_host = ws_host
+        self.db_name = db_name
+        self.db_user = db_user
+        self.db_pswd = db_pswd
+        self.db_host = db_host
+        self.db_port = db_port
+        self.sql_init = sql_init
+        self.sql_agency = sql_agency
+        self.sql_events = sql_events
+        self.recon_tries = recon_tries
+        self.recon_delay = recon_delay
+        self.recon_timeo = recon_timeo
+        self.lock = threading.Lock()
 
-@sio.event
-def disconnect():
-    print('Client disconnected from {x}'.format(x = src))
+    ## connect to database
+    def db_conn(self):
+        if hasattr(self, 'connect') and self.connect.closed == 0:
+            logger.info(msg = 'Database connection already exists.')
+            return
 
-## listen for events
-@sio.on('events')
-def on_message(json_data):
-
-    ## parse json response
-    try:
-        data = json.loads(json_data)
-        if len(data) == 0:
-            print('Client received empty JSON response.')
-
-    except:
-        print('Client failed to parse JSON response.')
-
-    ## insert data into the table
-    try:
-        for i in data:
-            cur.execute(
-                query = """
-                WITH j AS (
-                    SELECT * FROM idle
-                    WHERE vehicle_id = %s
-                    AND trip_id = %s
-                    AND route_id = %s
-                    AND latitude = %s
-                    AND longitude = %s
-                    ORDER BY duration DESC
-                    LIMIT 1
+        i = 0
+        while i < self.recon_tries:
+            try:
+                self.connect = psycopg2.connect(
+                    database = self.db_name,
+                    user = self.db_user,
+                    password = self.db_pswd,
+                    host = self.db_host,
+                    port = self.db_port
                 )
-                INSERT INTO idle (
-                    vehicle_id,
-                    trip_id,
-                    route_id,
-                    latitude,
-                    longitude,
-                    datetime,
-                    duration,
-                    source
+                logger.info(msg = 'Client successfully connected to database.')
+                break
+            except Exception as e:
+                logger.warning(msg = 'Client failed to connect to database. Reconnection attempt {x} of {y}: {z}.'.format(
+                        x = i + 1,
+                        y = self.recon_tries,
+                        z = e
+                    )
                 )
-                SELECT %s, %s, %s, %s, %s, %s, %s, %s
-                WHERE NOT EXISTS (
-                    SELECT 1
-                    FROM j
+                i += 1
+                time.sleep(self.recon_delay)
+
+        if i == self.recon_tries:
+            logger.error(msg = 'Client failed to connect to database. Max number of reconnection attempts.')
+            raise Exception('Client failed to connect to database.')
+
+    ## read sql file
+    def db_read(self, path):
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                logger.debug(msg = 'Client successfully read SQL query.')
+                return f.read()  ## query contents
+        else:
+            return ''  ## empty string if file does not exist
+
+    ## initialize database
+    def db_init(self):
+        self.cursor = self.connect.cursor()
+
+        ## init database
+        query = self.db_read(path = self.sql_init) # init query file path
+        self.cursor.execute(query = query)
+        self.connect.commit()
+        logger.info(msg = 'Client successfully initialized database.')
+
+        ## create agency table
+        query = self.db_read(path = self.sql_agency)  # agency query file path
+        self.cursor.execute(query = query)
+        self.connect.commit()
+        logger.info(msg = 'Client successfully created agency table.')
+
+    ## initialize websocket
+    def ws_init(self):
+        self.sio = socketio.Client(
+            reconnection = True,
+            reconnection_attempts = self.recon_tries,
+            reconnection_delay = self.recon_delay,
+            reconnection_delay_max = self.recon_timeo,
+            logger = False
+        )
+
+        ## websocket event handler
+        @self.sio.event
+        def connect():
+            logger.info(
+                msg = 'Client successfully connected to {x}.'.format(
+                    x = self.ws_host
                 )
-                OR %s > COALESCE((SELECT duration FROM j), 0)
-                ON CONFLICT (
-                    vehicle_id,
-                    trip_id,
-                    route_id,
-                    latitude,
-                    longitude
-                )
-                DO UPDATE SET duration = EXCLUDED.duration
-                WHERE idle.duration < EXCLUDED.duration;
-                """,
+            )
 
-                vars = (
-                    str(i['vehicle_id']),
-                    str(i['trip_id']),
-                    str(i['route_id']),
-                    float(i['latitude']),
-                    float(i['longitude']),
-                    str(i['vehicle_id']),
-                    str(i['trip_id']),
-                    str(i['route_id']),
-                    float(i['latitude']),
-                    float(i['longitude']),
-                    int(i['datetime']),
-                    int(i['duration']),
-                    str(i['source']),
-                    int(i['duration'])
+        @self.sio.event
+        def connect_error(data):  # Updated this line
+            logger.error(
+                msg = 'Client failed to connect to {x}: {y}'.format(  # Updated this line
+                    x = self.ws_host,
+                    y = data  # This is the error message passed by socketio
                 )
             )
 
-        ## save insert changes
-        cnn.commit()
-        print('Client wrote to http://{x}:{y}.'.format(
-            x = hst,
-            y = hst_prt
+        @self.sio.event
+        def disconnect():
+            logger.warning(
+                msg = 'Client disconnected from {x}.'.format(
+                    x = self.ws_host
+                )
             )
-        )
 
-    ## undo insert attempt
-    except:
-        cnn.rollback()
-        print('Client failed to write to http://{x}:{y}.'.format(
-            x = hst,
-            y = hst_prt
+        @self.sio.on('ping')
+        def on_ping(data):
+            if data is None or len(data) == 0:
+                logger.warning(msg = 'Client received empty ping from server.')
+                self.sio.emit('pong', 'default data')
+
+        @self.sio.on('events')  ## listen for events titled 'events'
+        def on_message(json_data):
+            if not self.sio.connected:
+                logger.warning(msg = 'Client is not connected to the websocket server.')
+                return
+
+            ## parse json response
+            try:
+                data = json.loads(json_data)
+                if len(data) == 0:
+                    logger.warning(msg = 'Client received empty websocket response.')
+                    return
+
+            except Exception as e:
+                logger.error(msg = 'Client failed to parse websocket response.')
+
+            ## insert events into table
+            with self.lock:
+                cursor = self.connect.cursor()
+                for i in data:
+                    query = self.db_read(path = self.sql_events)
+                    logger.debug(msg = 'Client successfully read SQL query.')
+                    try:
+                        cursor.execute(
+                            query = query,
+                            vars = (
+                                str(i['iata_id']),
+                                str(i['vehicle_id']),
+                                str(i['trip_id']),
+                                str(i['route_id']),
+                                float(i['latitude']),
+                                float(i['longitude']),
+                                str(i['iata_id']),
+                                str(i['vehicle_id']),
+                                str(i['trip_id']),
+                                str(i['route_id']),
+                                float(i['latitude']),
+                                float(i['longitude']),
+                                int(i['datetime']),
+                                int(i['duration']),
+                                int(i['duration'])
+                            )
+                        )
+
+                        ## save changes to database
+                        self.connect.commit()
+                        logger.debug(msg = 'Client successfully wrote single observation to database.')
+
+                    ## undo failed attempt
+                    except Exception as e:
+                        self.connect.rollback()
+                        logger.error(
+                            msg = 'Client failed to write to database: {x}.'.format(
+                                x = e
+                            )
+                        )
+                        return
+                
+                logger.info(msg = 'Client successfully wrote observations to database.')
+
+    ## connect to websocket with threading
+    def ws_thrd(self):
+        for i in range(0, self.recon_tries):
+            try:
+                self.sio.connect(
+                    url = self.ws_host,
+                    transports = 'websocket',
+                    wait_timeout = self.recon_timeo
+                )
+                if self.sio.connected:
+                    break
+            except (Exception, socket.timeout) as e:
+                logger.warning(
+                    msg = 'Client failed to connect to websocket server. Reconnection attempt {x} of {y}: {z}.'.format(
+                        x = i + 1,
+                        y = self.recon_tries,
+                        z = e
+                    )
+                )
+                time.sleep(self.recon_delay)
+        else:
+            logger.error(msg = 'Client failed to connect to websocket server. Max number of reconnection attempts.')
+
+    def ws_conn(self):
+        if hasattr(self, 'sio') and self.sio.connected:
+            logger.info(msg = 'Client already connected to websocket server.')
+            return
+
+        if self.ws_host == None:
+            logger.error(msg = 'Client has no websocket server specified.')
+            raise Exception('Client has no websocket server specified.')
+
+        ## start websocket thread
+        self.ws_thread = threading.Thread(target = self.ws_thrd)
+        self.ws_thread.start()
+
+    ## close database connection and websocket
+    def close(self):
+        if hasattr(self, 'connect') and self.connect is not None: 
+            try:
+                if self.connect.closed == 0:
+                    self.connect.close()
+                    logger.info(msg = 'Database connection closed.')
+            except Exception as e:
+                logger.error(
+                    msg = 'Error closing database connection: {x}'.format(
+                        x = e
+                    )
+                )
+
+        ## disconnect websocket
+        if hasattr(self, 'sio') and self.sio is not None:
+            try:
+                if self.sio.connected:
+                    self.sio.disconnect()
+                    logger.info(msg = 'Disconnected from websocket.')
+            except Exception as e:
+                logger.error(
+                    msg = 'Error disconnecting Websocket client: {x}'.format(
+                        x = e
+                    )
+                )
+
+        ## stop active threads
+        if hasattr(self, 'ws_thread') and self.ws_thread.is_alive():
+            self.ws_thread.join()
+            logger.info(msg = 'Websocket thread stopped.')
+
+    ## run client
+    def run(self):
+        try:
+            self.db_conn()  ## connect database
+            self.db_init()  ## initialize database
+            self.ws_init()  ## initialize websocket
+            self.ws_conn()  ## connect websocket
+            while not self.sio.connected:  ## wait for websocket connection
+                time.sleep(1)
+
+        except Exception as e:
+            self.close()  ## clean resources
+            logger.error('Client encountered an error while running: {x}.'.format(
+                x = e
+                )
             )
-        )
 
-## connect to database
-n_try_db = 3
-i = 0
-while i < n_try_db:
-    try:
-        cnn = psycopg2.connect(
-            dbname = 'idle',
-            user = 'user',
-            password = 'pass',
-            host = 'localhost',
-            port = 5432,
-        )
-        cur = cnn.cursor()
-        print('Client connected to http://{x}:{y}.'.format(
-            x = hst,
-            y = hst_prt
-            )
-        )
-        break
-
-    except:
-        print(
-            'Client failed to connect to database. Attempt {x} of {y}.'.format(
-                x = i + 1,
-                y = n_try_db
-            )
-        )
-    i += 1
-
-## end reconnect attempts
-if i == n_try_db:
-    print('Client failed to connect to database. Max retries reached.')
-    sys.exit(1)
-
-## connect to websocket
-n_try_ws = 3
-i = 0
-while i < n_try_ws:
-    try:
-        sio.connect(
-            url = src,
-            transports = 'websocket',
-            wait_timeout = 120,
-            wait = True
-        )
-        break
-
-    except:
-        print('Client failed to connect to {z}. Attempt {x} of {y}.'.format(
-            x = i + 1,
-            y = n_try_ws,
-            z = src
-            )
-        )
-    i += 1
-
-## end reconnect attempts
-if i == n_try_ws:
-    print('Client failed to connect to {z}. Max retries reached.'.format(z = src))
-    sys.exit(1)
-
-## end of program
+## end program

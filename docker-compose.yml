@@ -1,121 +1,148 @@
-version: '3.9'
-services:
+version: "3.9"
 
+volumes:
+  store:
+    driver: local
+
+services:
   extract:
     build:
       context: .
       dockerfile: ./ext/Dockerfile
-    user: user
     ports:
-      - '6080:6080'
+      - "8080:8080"
+    user: user
     cap_drop:
       - ALL
       - SETUID
       - SETGID
-    deploy:
-      restart_policy:
-        condition: unless-stopped
-        delay: 2s
-        window: 60s
-      resources:
-        limits:
-          memory: 256M
-        reservations:
-          memory: 64M
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1024M
+    mem_reservation: 512M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6080/"]
-      interval: 2s
-      timeout: 10s
+      test: ["CMD", "curl", "-sf", "http://extract:8080/"]
+      interval: 30s
+      timeout: 5s
       retries: 3
-      start_period: 10s
+    restart: always
 
   subset:
     build:
       context: .
       dockerfile: ./sub/Dockerfile
-    user: user
     ports:
-      - '4080:4080'
+      - "7080:7080"
+    user: user
     cap_drop:
       - ALL
       - SETUID
       - SETGID
-    deploy:
-      restart_policy:
-        condition: unless-stopped
-        delay: 2s
-        window: 30s
-      resources:
-        limits:
-          memory: 2048M
-        reservations:
-          memory: 512M
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1024M
+    mem_reservation: 512M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4080/"]
-      interval: 2s
-      timeout: 10s
+      test: ["CMD", "curl", "-sf", "http://subset:7080/"]
+      interval: 30s
+      timeout: 5s
       retries: 3
-      start_period: 10s
+    restart: always
     depends_on:
       extract:
-        condition: service_healthy
-
-  database:
-    image: postgres:15.2
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASS}
-      POSTGRES_DB: ${DB_NAME}
-    ports:
-      - '5432:5432'
-    deploy:
-      restart_policy:
-        condition: unless-stopped
-        delay: 2s
-        window: 60s
-    volumes:
-      - store:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${DB_USER}", "-d", "${DB_NAME}"]
-      interval: 2s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    depends_on:
-      extract:
-        condition: service_healthy
-      subset:
         condition: service_healthy
 
   write:
     build:
       context: .
       dockerfile: ./wrt/Dockerfile
+    environment:
+      DB_NAME: idle
+      DB_USER: user
+      DB_PASS: pass
+    ports:
+      - "6080:6080"
     user: user
     cap_drop:
       - ALL
       - SETUID
       - SETGID
-    deploy:
-      restart_policy:
-        condition: unless-stopped
-        delay: 2s
-        window: 30s
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 128M
-    network_mode: host
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1024M
+    mem_reservation: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://write:6080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: always
     depends_on:
-      extract:
-        condition: service_healthy
       subset:
         condition: service_healthy
       database:
         condition: service_healthy
 
-volumes:
-  store:
-    driver: local
+  read:
+    build:
+      context: .
+      dockerfile: ./rdb/Dockerfile
+    environment:
+      DB_NAME: idle
+      DB_USER: user
+      DB_PASS: pass
+    ports:
+      - "6180:6180"
+    user: user
+    cap_drop:
+      - ALL
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1024M
+    mem_reservation: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://read:6180/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: always
+    depends_on:
+      database:
+        condition: service_healthy
+
+  database:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: idle
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    ports:
+      - "5432:5432"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - store:/var/lib/postgresql/data
+      - ./wrt/conf/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "user", "-d", "idle"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    restart: always
+
+  interface:
+    build:
+      context: .
+      dockerfile: ./gui/Dockerfile
+    ports:
+      - "80:80"
+    user: user
+    cap_drop:
+      - ALL
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    restart: always
