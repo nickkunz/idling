@@ -17,7 +17,7 @@ const App = () => {
             <ThemeProvider theme={themeStyle}>
                 <GlobalStyle />
                 <Helmet>
-                    <title>Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling</title>
+                    <title>Ground Truth Buffer for Idling</title>
                     <link rel="preconnect" href="https://fonts.googleapis.com" />
                     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
                     <link
