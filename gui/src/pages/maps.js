@@ -8,7 +8,7 @@ import { ThemeContext } from '../App';
 import RangeInput from '../components/slider/Slider';
 
 // params
-const REACT_APP_MAPBOX_TOKEN = "pk.eyJ1Ijoibmlja2t1bnoiLCJhIjoiY2xwcTNrd3AzMTMwYjJrcjRmOGt2YmZjOCJ9.dDsSs9S8w2l7zAi05LaNhQ"
+const REACT_APP_MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 const MAP_ZOOM = 12;
 
 // idling duration color map
