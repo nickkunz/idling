@@ -8,7 +8,8 @@ ARG DOCKER_CONTENT_TRUST=1
 ARG DEBIAN_FRONTEND=noninteractive
 
 ## install dependencies
-RUN apt-get update &&\
+RUN apt-get clean &&\
+    apt-get update &&\
     apt-get upgrade -y &&\
     apt-get install -y curl software-properties-common &&\
     apt-get install -y --no-install-recommends --fix-missing\
@@ -50,7 +51,7 @@ COPY . /app
 RUN pip3 install -r ./rdb/requirements.txt
 
 ## open port
-EXPOSE 6180
+EXPOSE 4080
 
 ## run non-root user
 USER user

@@ -8,7 +8,8 @@ ARG DOCKER_CONTENT_TRUST=1
 ARG DEBIAN_FRONTEND=noninteractive
 
 ## install dependencies
-RUN apt-get update &&\
+RUN apt-get clean &&\
+    apt-get update &&\
     apt-get upgrade -y &&\
     apt-get install -y curl software-properties-common &&\
     curl -sL https://deb.nodesource.com/setup_20.x | bash - &&\
@@ -50,7 +51,7 @@ RUN groupadd -g 999 group &&\
 USER user
 
 ## open port
-EXPOSE 80
+EXPOSE 3080
 
 ## run application
 ENTRYPOINT ["bash", "./start.sh"]

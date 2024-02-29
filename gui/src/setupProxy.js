@@ -4,7 +4,7 @@ module.exports = function(app) {
   app.use(
     '/idle',
     createProxyMiddleware({
-      target: 'http://read:6180/',
+      target: 'http://read:4080/',
       changeOrigin: true,
     })
   );
