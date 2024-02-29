@@ -117,7 +117,7 @@ const Sidebar = ({ onCitySelect }) => {
 
     return (
         <SSidebar>
-            Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling
+            <SThemeLabel>GRD-TRT-BUF-4I: Ground Truth Buffer for Idling</SThemeLabel>
             <SDivider />
             {linksArray.map(({ icon, label, notification, to, action }) => (
             <SLinkContainer key={label} isActive={pathname === to}>
