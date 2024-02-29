@@ -3,7 +3,7 @@
 </div>
 
 # GRD-TRT-BUF-4I: Ground Truth Buffer for Idling
-This is an implementation of GRD-TRT-BUF-4I from the paper "Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling." The system detects, stores, and visualizes urban transit bus idling data in realtime. It is designed using containerized microservices and is configurable to deploy on any cloud-based platform. Each microservice is listed below with a brief description.
+An implementation of GRD-TRT-BUF-4I from the paper "Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling." The system detects, stores, and visualizes urban transit bus idling data in realtime. It is designed using containerized microservices and is configurable to deploy on any cloud-based platform. Each microservice is listed below with a brief description.
 
 ### Microservices
 - __Extract__ (ext): Collects and parses protocol buffers from GTFS Realtime sources.
@@ -134,13 +134,14 @@ The design pattern follows these port conventions:
     Listen for the __Events__ titled `events`. There should be a continuous stream of idling data every 30 seconds in the following format:
     ```json
     {
-        "iata_id": "NYC",
-        "vehicle_id": "MTA NYCT_9750",
-        "route_id": "M42",
-        "trip_id": "MQ_D3-Weekday-SDon-012900_M42_301", "latitude": 40.7625617980957,
-        "longitude": -74.00098419189453,
-        "datetime": 1697178720,
-        "duration": 90
+        "iata_id": "",
+        "vehicle_id": "",
+        "route_id": "",
+        "trip_id": "",
+        "latitude": 0.01,
+        "longitude": -0.01,
+        "datetime": 123,
+        "duration": 123
     }
     ```
 
