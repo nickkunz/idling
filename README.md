@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="https://github.com/nickkunz/idling/blob/dev/gui/public/banner.png">
+</div>
+
 # GRD-TRT-BUF-4I: Ground Truth Buffer for Idling
 This is an implementation of GRD-TRT-BUF-4I from the paper "Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling." The system detects, stores, and visualizes urban transit bus idling data in realtime. The system is designed using containerized microservices and is configurable to deploy on any cloud-based platform. Each microservice is listed below with a brief description.
 
