@@ -1,13 +1,13 @@
 # GRD-TRT-BUF-4I: Ground Truth Buffer for Idling
-This is an implementation of GRD-TRT-BUF-4I from the research in "Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling." The system detects, stores, and visualizes urban transit bus idling data in realtime. The microservice system is containerized and designed to be locally tested and configurable to deploy on a cloud-based platform.
+This is an implementation of GRD-TRT-BUF-4I from the paper "Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling." The system detects, stores, and visualizes urban transit bus idling data in realtime. The system is designed using containerized microservices and is configurable to deploy on any cloud-based platform. Each microservice is listed below with a brief description.
 
 ### Microservices
-- __Extract__ (ext): Collects protocol buffers from GTFS Realtime sources.
-- __Subset__ (sub): Filters and computes idling data for websocket streaming and storage.
-- __Write__ (wrt): Stores the idling data in a database for retrieval.
+- __Extract__ (ext): Collects and parses protocol buffers from GTFS Realtime sources.
+- __Subset__ (sub): Filters and computes idling data for websocket streaming.
+- __Write__ (wrt): Inserts the idling data into persistent storage.
 - __Database__ (db): Manages idling data storage and retrieval.
-- __Read__ (rdb): Retrieves data from the database for visualization and consumption.
-- __Interface__ (gui): Frontend data visualization and general project information.
+- __Read__ (rdb): Retrieves stored idling data from database.
+- __Interface__ (gui): Frontend idling data visualization and retrieval.
 
 ### Version
 <!-- Unnamed Enterprise Edition 1.0.0 --> 
@@ -62,6 +62,14 @@ _Note: All dependencies are installed automatically when built with containers._
     ```
 
     This command will also run the container images for each microservice, including the database.
+    
+    It may take awhile to complete the build process for each microservice.
+
+3. __Connect to Websocket__
+
+4. __Connect to Database__
+
+4. __Browse Interface__
 
 ## Repository Structure
 The repository follows the structure below:
@@ -111,7 +119,7 @@ The frontend microservice follows the structure below:
 ├─ ...
 ```
 
-### Port Conventions
+## Port Conventions
 The design pattern follows these port conventions:
 - `8080`: Extract (ext)
 - `7080`: Subset (sub)
@@ -125,8 +133,7 @@ The design pattern follows these port conventions:
 GRD-TRT-BUF-4I is open for improvements and maintenance. Your help is valued to make the system better for everyone.
 
 ## Contacts
-* Nick Kunz: nhk37@cornell.edu
-* H. Oliver Gao: hg55@cornell.edu
+Nick Kunz, Cornell University: nhk37@cornell.edu
 
 ## License
 
