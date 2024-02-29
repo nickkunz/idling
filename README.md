@@ -134,13 +134,14 @@ The design pattern follows these port conventions:
     Listen for the __Events__ titled `events`. There should be a continuous stream of idling data every 30 seconds in the following format:
     ```json
     {
-        "iata_id": "NYC",
-        "vehicle_id": "MTA NYCT_9750",
-        "route_id": "M42",
-        "trip_id": "MQ_D3-Weekday-SDon-012900_M42_301", "latitude": 40.7625617980957,
-        "longitude": -74.00098419189453,
-        "datetime": 1697178720,
-        "duration": 90
+        "iata_id": "",
+        "vehicle_id": "",
+        "route_id": "",
+        "trip_id": "",
+        "latitude": 0.01,
+        "longitude": -0.01,
+        "datetime": 123,
+        "duration": 123
     }
     ```
 
