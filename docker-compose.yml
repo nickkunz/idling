@@ -92,7 +92,7 @@ services:
       DB_USER: user
       DB_PASS: pass
     ports:
-      - "6180:6180"
+      - "4080:4080"
     user: user
     cap_drop:
       - ALL
@@ -103,7 +103,7 @@ services:
     mem_limit: 1024M
     mem_reservation: 512M
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://read:6180/"]
+      test: ["CMD", "curl", "-sf", "http://read:4080/"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -137,7 +137,7 @@ services:
       context: .
       dockerfile: ./gui/Dockerfile
     ports:
-      - "80:80"
+      - "3080:3080"
     user: user
     cap_drop:
       - ALL

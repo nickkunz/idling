@@ -10,15 +10,16 @@ This is an implementation of GRD-TRT-BUF-4I from the research in "Global Geoloca
 - __Interface__ (gui): Frontend data visualization and general project information.
 
 ### Version
-<!-- Via Appia 0.9.0 --> 
-<!-- Isidore 0.8.0 --> 
-<!-- Frontinus 0.7.0 --> 
-<!-- Anthemius 0.6.0 --> 
-<!-- Vitruvius 0.5.0 --> 
-<!-- Archimedes 0.4.0 --> 
-<!-- Qanats 0.3.0 --> 
-<!-- Eupalinos 0.2.0 -->
-Imhotep 0.1.0<br>
+<!-- Unnamed Enterprise Edition 1.0.0 --> 
+<!-- Via Appia 0.9.X --> 
+<!-- Isidore 0.8.X --> 
+<!-- Frontinus 0.7.X --> 
+<!-- Anthemius 0.6.X --> 
+<!-- Vitruvius 0.5.X --> 
+<!-- Archimedes 0.4.X --> 
+<!-- Qanats 0.3.X --> 
+<!-- Eupalinos 0.2.X -->
+Imhotep 0.1.X<br>
 _Updated: Feb. 2024_
 
 ## Dependencies
@@ -111,13 +112,13 @@ The frontend microservice follows the structure below:
 ```
 
 ### Port Conventions
-The design pattern follows the port conventions below:
+The design pattern follows these port conventions:
 - `8080`: Extract (ext)
 - `7080`: Subset (sub)
 - `6080`: Write (wrt)
 - `5432`: Database (db)
-- `6180`: Read (db)
-- `80`: Interface (int)
+- `4080`: Read (rdb)
+- `3080`: Interface (int)
 
 ## Contributions
 
