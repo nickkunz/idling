@@ -10,7 +10,7 @@ An implementation of GRD-TRT-BUF-4I from the paper "Global Geolocated Realtime D
 - __Subset__ (sub): Filters and computes idling data for websocket streaming.
 - __Write__ (wrt): Inserts the idling data into persistent storage.
 - __Database__ (db): Manages idling data storage and retrieval.
-- __Read__ (rdb): Retrieves stored idling data from database.
+- __Read__ (rdb): Retrieves stored idling data from database. Also contains data tests.
 - __Interface__ (gui): Frontend idling data visualization and retrieval.
 
 ### Version
@@ -43,7 +43,7 @@ The repository follows the structure below:
 ```
 ├─ ext                   ## extract microservice
 ├─ gui                   ## interface microservice
-├─ rdb                   ## read microservice
+├─ rdb                   ## read microservice and data tests
 ├─ sub                   ## subset microservice
 ├─ wrt                   ## write microservice
 ├─ .dockerignore         ## excluded files in docker
@@ -188,18 +188,28 @@ The design pattern follows these port conventions:
 
 4. __Browse Interface__
 
-    Ensure the __Interface__ microservice is running. Navigate to `http://localhost:3080` in your browser and access the frontend interface.
+    Ensure the __Interface__ microservice is running. Navigate to `http://localhost:3080` in your browser to access the frontend interface.
 
 ## Citations
 ```
-@software{grd-trt-buf-4i,
-  author       = {Nicholas Kunz},
-  title        = {{GRD-TRT-BUF-4I: Ground Truth Buffer for Idling}},
-  year         = {2023},
-  publisher    = {Github},
-  version      = {Imhotep 0.1.0},
-  url          = {https://github.com/nickkunz/idling},
-  copyright    = {GPL v3.0}
+@article{Kunz_2024,
+  title         = {{Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling}},
+  author        = {Nichlas Kunz and H. Oliver Gao},
+  eprint        = {5451982},
+  year          = {2024},
+  archivePrefix = {arXiv},
+  primaryClass  = {eess.SY}
+}
+```
+```
+@misc{GRD-TRT-BUF-4I_2023,
+  title         = {{GRD-TRT-BUF-4I: Ground Truth Buffer for Idling}},
+  author        = {Nicholas Kunz},
+  year          = {2023},
+  publisher     = {Github},
+  version       = {Imhotep 0.1.0},
+  url           = {https://github.com/nickkunz/idling},
+  copyright     = {GPL v3.0}
 }
 ```
 
@@ -215,4 +225,4 @@ Nick Kunz, Cornell University: nhk37@cornell.edu
 © Nick Kunz, 2024. Licensed under the General Public License v3.0 (GPLv3).
 
 ## References
-Kunz, N., Gao, H. O. (2024). Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling. _In Preparation._
+Kunz, N., Gao, H. O. (2024). Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling. Preprint. _arXiv:5451982_ [eess.SY]
