@@ -24,7 +24,7 @@ An implementation of GRD-TRT-BUF-4I from the paper "Global Geolocated Realtime D
 <!-- Qanats 0.3.X --> 
 <!-- Eupalinos 0.2.X -->
 Imhotep 0.1.X<br>
-_Updated: Feb. 2024_
+_Updated: Mar. 2024_
 
 ## Dependencies
 0. Docker Desktop (Latest)
