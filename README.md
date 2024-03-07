@@ -195,10 +195,11 @@ The design pattern follows these port conventions:
 @article{Kunz_2024,
   title         = {{Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling}},
   author        = {Nichlas Kunz and H. Oliver Gao},
-  eprint        = {5451982},
+  eprint        = {2403.03489},
   year          = {2024},
   archivePrefix = {arXiv},
-  primaryClass  = {eess.SY}
+  primaryClass  = {eess.SY},
+  howpublished = "\url{https://arxiv.org/abs/2403.03489}"
 }
 ```
 ```
@@ -225,4 +226,4 @@ Nick Kunz, Cornell University: nhk37@cornell.edu
 © Nick Kunz, 2024. Licensed under the General Public License v3.0 (GPLv3).
 
 ## References
-Kunz, N., Gao, H. O. (2024). Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling. Preprint. _arXiv:5451982_ [eess.SY]
+Kunz, N., Gao, H. O. (2024). Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling. Preprint. _arXiv:5451982_ [eess.SY]. https://arxiv.org/abs/2403.03489.
