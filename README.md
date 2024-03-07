@@ -199,7 +199,7 @@ The design pattern follows these port conventions:
   year          = {2024},
   archivePrefix = {arXiv},
   primaryClass  = {eess.SY},
-  howpublished = "\url{https://arxiv.org/abs/2403.03489}"
+  howpublished  = "\url{https://arxiv.org/abs/2403.03489}"
 }
 ```
 ```
