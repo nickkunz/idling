@@ -48,7 +48,7 @@ def db_read(conn):
 
     data = pd.read_sql_query(query, conn)
     if data['datetime'].isnull().any():
-        raise ValueError("NaN values found in 'datetime' column after loading data.")
+        raise ValueError("NaN values found in 'datetime' column after loading.")
     
     return data.drop(['prev_datetime'], axis = 1)
 
@@ -56,7 +56,8 @@ def db_read(conn):
 def get_periods(data):
     """
     Desc:
-        Divide the DataFrame into contiguous 24-hour periods with no gaps longer than 10 minutes.
+        Divide the DataFrame into contiguous 24-hour periods with no gaps longer
+        than 10 minutes.
     
     Args:
         data: DataFrame (default: None)
@@ -73,17 +74,19 @@ def get_periods(data):
     start_time = data['datetime'].min()
     end_time = data['datetime'].max() + 86400
 
-    ## divide into contiguous 24-hour periods with no gaps longer than 10 minutes
+    ## divide into contiguous 24-hour periods with no gaps longer than 10 min
     while start_time < end_time:
         end_period = start_time + 86400
-        data_period = data[(data['datetime'] >= start_time) & (data['datetime'] < end_period)]
+        data_period = data[
+            (data['datetime'] >= start_time) & (data['datetime'] < end_period)
+        ]
         
         ## check for gaps longer than 10 minutes within the period
         diffs = data_period['datetime'].diff()
         if (diffs > 600).any():
-            start_time = end_period  ## gaps longer than 10 minutes, skip this period
+            start_time = end_period  ## gaps longer than 10 min, skip
         else:
-            periods.append(data_period)  ## gaps longer than 10 minutes, add the period
+            periods.append(data_period)  ## gaps longer than 10 min, add
             start_time = end_period
 
     return periods

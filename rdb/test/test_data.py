@@ -1401,7 +1401,7 @@ if __name__ == '__main__':
 
     ## other info
     print('Number of observations: ' + str(len(data)))
-    print('Percentage of missing data: ' + str(round((data.isnull().sum().sum() / data.size * 100), 2)) + '%')
+    print('Percentage of missing observations: ' + str(round((data.isnull().sum().sum() / data.size * 100), 2)) + '%')
     print('Date range of observations: ' + \
         str(datetime.utcfromtimestamp(data['datetime'].min()).strftime('%Y-%m-%d %H:%M:%S')) + ' to ' + \
         str(datetime.utcfromtimestamp(data['datetime'].max()).strftime('%Y-%m-%d %H:%M:%S'))
