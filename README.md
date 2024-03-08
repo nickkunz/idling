@@ -27,16 +27,20 @@ Imhotep 0.1.X<br>
 _Updated: Mar. 2024_
 
 ## Dependencies
-0. Docker Desktop (Latest)
-1. OS: Ubuntu 20.04
-2. Language: Python 3.8
-3. Web App: Flask 2.3.1 / Quart 0.18.3
-4. WSGI/ASGI: Gunicorn / Uvicorn (Latest)
-5. Proxy Server: Nginx (Latest)
-6. Database: PostgreSQL 16
-7. Frontend: React (17.0.2), Deck GL (8.9.33)
+- Docker Desktop (Latest)
+- OS: Ubuntu 20.04
+- Language: Python 3.8
+- Web App: Flask 2.3.1 / Quart 0.18.3
+- WSGI/ASGI: Gunicorn / Uvicorn (Latest)
+- Proxy Server: Nginx (Latest)
+- Database: PostgreSQL 16
+- Frontend: React (17.0.2), Deck GL (8.9.33)
 
 _Note: All dependencies are automatically installed when built with Docker._
+
+## Requirements
+- GTFS Realtime API Keys (see: [Extract README](ext/README.md))
+- Mapbox Access Token (see: [Interface README](gui/README.md))
 
 ## Repository Structure
 The repository follows the structure below:
@@ -87,6 +91,12 @@ The frontend microservice follows the structure below:
 ```
 
 ## Installation
+0. __Acquire API Keys__
+
+    There are two categories of API keys that are required. More information on how to obtain them is here:
+    - GTFS Realtime API Keys (see: [Extract README](ext/README.md))
+    - Mapbox Access Token (see: [Interface README](gui/README.md)).
+
 1. __Install Docker__
 
     Ensure that Docker Desktop is installed on your local machine. You can download it here: 

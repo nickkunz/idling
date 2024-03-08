@@ -1,7 +1,20 @@
 # GRD-TRT-BUF-4I: Interface Microservice
 
 ## Dependencies
-1. OS: Ubuntu 20.04 LTS (Focal Fossa)
-2. Language: JavaScript (V8 v11.3, Chromium 113)
-3. Web App: Node.js 20.9.0 (Iron)
-4. Reverse Proxy: Nginx (Latest)
+- OS: Ubuntu 20.04 LTS (Focal Fossa)
+- Language: JavaScript (V8 v11.3, Chromium 113)
+- Web App: Node.js 20.9.0 (Iron)
+- Reverse Proxy: Nginx (Latest)
+
+## Requirements
+- Mapbox Access Token
+
+## Getting Started
+1. Obtain a Mapbox Access Token here: https://docs.mapbox.com/help/getting-started/access-tokens/
+
+2. Using the `.env.example` file in the `./gui` service folder, rename it to `.env` and create an environment variable with your Mapbox Access Token: `REACT_APP_MAPBOX_TOKEN=<your token here>`.
+
+3. Build and execute the Docker container using the following command:
+```
+docker-compose up --build -d interface
+```
