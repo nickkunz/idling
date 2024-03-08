@@ -1,3 +1,4 @@
+## libraries
 import os
 import warnings
 import psycopg2
@@ -87,7 +88,7 @@ def get_periods(data):
 
     return periods
 
-## save the data to csv
+## save csv data to disk
 def to_csv(data_period, output_dir, index_period):
     
     ## ensure dataframe is not empty and 'datetime' column has no null vals
