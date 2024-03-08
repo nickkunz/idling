@@ -94,7 +94,7 @@ def to_csv(data_period, output_dir, index_period):
     if not data_period.empty and data_period['datetime'].notnull().all():
         datetime_min = data_period['datetime'].min()
         
-        ## ensure 'datetime_min' has valid timestamp
+        ## ensure 'datetime_min' has valid timestamp and save to disk
         if pd.notnull(datetime_min):
             date = datetime.fromtimestamp(datetime_min)
             name = f"test-data-{date.strftime('%Y-%m-%d')}.csv"
@@ -117,14 +117,12 @@ def main():
     data = db_read(conn = conn) ## query the database
     conn.close() ## close the connection
 
-    ## write csv files
+    ## csv filepath
     dir = './rdb/test/data/'
     os.makedirs(name = dir, exist_ok = True)
 
-    ## divide into contiguous 24-hour periods with no gaps longer than 10 minutes
+    ## save csv data to disk
     periods = get_periods(data = data)
-
-    # Save each period to a separate CSV file
     for index, period in enumerate(periods):
         to_csv(
             data_period = period, 
