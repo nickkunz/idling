@@ -75,15 +75,13 @@ const Sidebar = ({ onCitySelect }) => {
     const { pathname } = useLocation();
     const { setTheme, theme } = useContext(ThemeContext);
     const [isCitiesDropdownOpen, setIsCitiesDropdownOpen] = useState(false);
-
     const toggleCitiesDropdown = () => setIsCitiesDropdownOpen(prev => !prev);
     const handleCityClick = (city) => {
         if (onCitySelect) {
           onCitySelect(city.coordinates, city.iata_id); 
         }
         setIsCitiesDropdownOpen(false);
-      };
-
+    };
     const linksArray = [
         {
             label: "Live",
@@ -156,8 +154,8 @@ const Sidebar = ({ onCitySelect }) => {
                         </p>
                         ))}
                     </div>
-                    )}
-                </SLinkContainer>
+                )}
+            </SLinkContainer>
         ))}
             {/* <SDivider />
             {secondaryLinksArray.map((item, index) => (
@@ -177,7 +175,7 @@ const Sidebar = ({ onCitySelect }) => {
                     isActive={theme === "dark"}
                     onClick={() => setTheme((p) => (p === "light" ? "dark" : "light"))}
                 >
-                    <SToggleThumb style={theme === "dark" ? { right: "1px" } : {}} />
+                <SToggleThumb style={theme === "dark" ? { right: "1px" } : {}} />
                 </SThemeToggler>
             </STheme>
         </SSidebar>
