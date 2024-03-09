@@ -35,7 +35,7 @@ export default function RangeInput({ min, max, value: propValue, onChange, isPla
     const intervalRef = useRef();
     const valueRef = useRef(propValue);
     const [value, setValue] = useState(propValue);
-    
+
     useEffect(() => {
         setValue(propValue);
         valueRef.current = propValue;
