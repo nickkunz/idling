@@ -49,7 +49,7 @@ def db_read(conn):
     data = pd.read_sql_query(query, conn)
     if data['datetime'].isnull().any():
         raise ValueError("NaN values found in 'datetime' column after loading.")
-    
+
     return data.drop(['prev_datetime'], axis = 1)
 
 ## find 24-hour periods
@@ -58,13 +58,13 @@ def get_periods(data):
     Desc:
         Divide the DataFrame into contiguous 24-hour periods with no gaps longer
         than 10 minutes.
-    
+
     Args:
         data: DataFrame (default: None)
     
     Returns:
-        A list of DataFrames
-    
+        A list of DataFrames.
+
     Exceptions:
         None
     """
@@ -80,7 +80,7 @@ def get_periods(data):
         data_period = data[
             (data['datetime'] >= start_time) & (data['datetime'] < end_period)
         ]
-        
+
         ## check for gaps longer than 10 minutes within the period
         diffs = data_period['datetime'].diff()
         if (diffs > 600).any():
@@ -93,11 +93,11 @@ def get_periods(data):
 
 ## save csv data to disk
 def to_csv(data_period, output_dir, index_period):
-    
+
     ## ensure dataframe is not empty and 'datetime' column has no null vals
     if not data_period.empty and data_period['datetime'].notnull().all():
         datetime_min = data_period['datetime'].min()
-        
+
         ## ensure 'datetime_min' has valid timestamp and save to disk
         if pd.notnull(datetime_min):
             date = datetime.fromtimestamp(datetime_min)
