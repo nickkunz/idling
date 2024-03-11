@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState } from "react";
 import { FaMapMarkedAlt, FaChevronDown, FaDatabase } from "react-icons/fa";
 import { MdOutlineAnalytics } from "react-icons/md";
 import { ThemeContext } from "../../App";
@@ -93,7 +93,7 @@ const Sidebar = ({ onCitySelect }) => {
         {
             label: "Data",
             icon: <FaDatabase />, 
-            to: "/downloads",
+            to: "/data",
             notification: 0,
         },
         {
