@@ -4,6 +4,8 @@ import { MdOutlineAnalytics } from "react-icons/md";
 import { ThemeContext } from "../../App";
 import { useLocation } from "react-router-dom";
 import {
+    LargeTitle,
+    SmallTitle,
     SDivider,
     SLink,
     SLinkContainer,
@@ -14,7 +16,7 @@ import {
     STheme,
     SThemeLabel,
     SThemeToggler,
-    SToggleThumb,
+    SToggleThumb
 } from "./styles";
 
 const live = [
@@ -84,11 +86,10 @@ const Sidebar = ({ onCitySelect }) => {
     };
     const linksArray = [
         {
-            label: "Live",
-            icon: <FaMapMarkedAlt/>,
-            to: "/",
+            label: "About",
+            icon: <MdOutlineAnalytics />,
+            to: "/about",
             notification: 0,
-
         },
         {
             label: "Data",
@@ -97,10 +98,11 @@ const Sidebar = ({ onCitySelect }) => {
             notification: 0,
         },
         {
-            label: "About",
-            icon: <MdOutlineAnalytics />,
-            to: "/about",
+            label: "Live",
+            icon: <FaMapMarkedAlt/>,
+            to: "/",
             notification: 0,
+
         }
     ];
 
@@ -115,7 +117,8 @@ const Sidebar = ({ onCitySelect }) => {
 
     return (
         <SSidebar>
-            <SThemeLabel>GRD-TRT-BUF-4I: Ground Truth Buffer for Idling</SThemeLabel>
+            <LargeTitle>GRD-TRT-BUF-4I</LargeTitle>
+            <SmallTitle>Ground Truth Buffer for Idling</SmallTitle>
             <SDivider />
             {linksArray.map(({ icon, label, notification, to, action }) => (
             <SLinkContainer key={label} isActive={pathname === to}>

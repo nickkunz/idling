@@ -2,10 +2,20 @@ import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { btnReset, v } from "../../styles/variables";
 
+export const LargeTitle = styled.h1`
+  font-size: 26px;
+`;
+
+export const SmallTitle = styled.h2`
+  font-size: 14px;
+`;
+
 export const SSidebar = styled.div`
     width: ${v.sidebarWidth};
+    flex-shrink: 0;
+    box-sizing: border-box;
     background: ${({ theme }) => theme.bg};
-    height: 100vh; // Set the height to the height of the viewport
+    height: 100vh;
     padding: ${v.lgSpacing};
     position: relative;
     overflow-y: hidden;
