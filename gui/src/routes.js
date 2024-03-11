@@ -1,6 +1,8 @@
 import React from "react";
 import { Route, Switch } from "react-router-dom";
 import LiveMap from "./pages/Maps";
+import About from "./pages/About";
+import Data from "./pages/Data";
 
 const Routes = ({ selectedCity }) => {
     return (
@@ -8,11 +10,11 @@ const Routes = ({ selectedCity }) => {
             <Route exact path="/">
                 <LiveMap selectedCity={selectedCity} />
             </Route>
-            <Route exact path="/about">
-                <h1>Coming Soon... </h1>
+            <Route exact path="/data">
+                <Data />
             </Route>
-            <Route exact path="/downloads">
-                <h1>Coming Soon... </h1>
+            <Route exact path="/about">
+                <About />
             </Route>
         </Switch>
     );
