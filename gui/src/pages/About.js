@@ -5,8 +5,17 @@ import { TextContainer, HorizontalList, StyledLink } from "../components/layout/
 const About = () => {
     return (
         <TextContainer>
-           <LargeTitle>About</LargeTitle><br />
-                Idling is a project that aims to provide a real-time map of air quality data from around the world. The project is open-source and the code is available on Github. The project is also available on arXiv and figshare.<br /><br />
+            <LargeTitle>About</LargeTitle><br />
+            GRD-TRT-BUF-4I is the urban transit bus idling detection system drawn 
+            from the paper “Global Geolocated Realtime Data of Interfleet Urban 
+            Transit Bus Idling”. It offers a global perspective on the emergent 
+            behavior of interfleet idling patterns that contribute to worldwide 
+            ecological stress, economic inefficiency, and human health risks. 
+            This research aims to reduce idling emissions and improve urban air 
+            quality by providing a detailed and dynamic picture of interfleet 
+            idling behavior around the world to make our global communities 
+            healthier and more sustainable while reducing cost and increasing 
+            efficiency.<br /><br />
 
             <h4>Links</h4>
             <HorizontalList>

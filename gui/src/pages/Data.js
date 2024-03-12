@@ -1,6 +1,6 @@
 import React from "react";
 import { LargeTitle } from "../components/sidebar/styles";
-import { TextContainer, HorizontalList, StyledLink } from "../components/layout/styles";
+import { TextContainer } from "../components/layout/styles";
 
 const Data = () => {
     return (
