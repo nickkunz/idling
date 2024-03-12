@@ -136,6 +136,27 @@ The design pattern follows these port conventions:
 - `4080`: __Read__ (rdb)
 - `3080`: __Interface__ (int)
 
+<!-- ## Deployment
+All microservices are designed to be deployed on any cloud platform. The following are steps to deploy on Azure. However, they will be similar for others such as AWS, GCP, etc.
+1. __Install Azure CLI__
+
+    Ensure that Azure CLI is installed on your local machine. You can download it here: 
+
+    https://docs.microsoft.com/en-us/cli/azure/install-azure-cli
+
+2. __Login to Azure__
+    
+        Login to your Azure account using the CLI.
+        ```bash
+        az login
+        ```
+3. __Create Resource Group__
+    
+        Create a resource group for the project.
+        ```bash
+        az group create --name <resource-group-name> --location <location>
+        ``` -->
+
 ## Usage
 1. __Connect to Websocket__
 
@@ -201,6 +222,7 @@ The design pattern follows these port conventions:
     Ensure the __Interface__ microservice is running. Navigate to `http://localhost:3080` in your browser to access the frontend interface.
 
 ## Citations
+Research
 ```
 @article{Kunz_2024,
   title         = {{Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling}},
@@ -212,6 +234,8 @@ The design pattern follows these port conventions:
   howpublished  = "\url{https://arxiv.org/abs/2403.03489}"
 }
 ```
+
+Software
 ```
 @misc{GRD-TRT-BUF-4I_2023,
   title         = {{GRD-TRT-BUF-4I: Ground Truth Buffer for Idling}},
@@ -228,7 +252,7 @@ The design pattern follows these port conventions:
 
 GRD-TRT-BUF-4I is open for improvements and maintenance. Your help is valued to make the system better for everyone.
 
-## Contacts
+## Contact
 Nick Kunz, Cornell University: nhk37@cornell.edu
 
 ## License

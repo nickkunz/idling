@@ -1,9 +1,11 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState } from "react";
 import { FaMapMarkedAlt, FaChevronDown, FaDatabase } from "react-icons/fa";
 import { MdOutlineAnalytics } from "react-icons/md";
 import { ThemeContext } from "../../App";
 import { useLocation } from "react-router-dom";
 import {
+    LargeTitle,
+    SmallTitle,
     SDivider,
     SLink,
     SLinkContainer,
@@ -14,7 +16,7 @@ import {
     STheme,
     SThemeLabel,
     SThemeToggler,
-    SToggleThumb,
+    SToggleThumb
 } from "./styles";
 
 const live = [
@@ -75,34 +77,32 @@ const Sidebar = ({ onCitySelect }) => {
     const { pathname } = useLocation();
     const { setTheme, theme } = useContext(ThemeContext);
     const [isCitiesDropdownOpen, setIsCitiesDropdownOpen] = useState(false);
-
     const toggleCitiesDropdown = () => setIsCitiesDropdownOpen(prev => !prev);
     const handleCityClick = (city) => {
         if (onCitySelect) {
           onCitySelect(city.coordinates, city.iata_id); 
         }
         setIsCitiesDropdownOpen(false);
-      };
-
+    };
     const linksArray = [
+        {
+            label: "About",
+            icon: <MdOutlineAnalytics />,
+            to: "/about",
+            notification: 0,
+        },
+        {
+            label: "Data",
+            icon: <FaDatabase />, 
+            to: "/data",
+            notification: 0,
+        },
         {
             label: "Live",
             icon: <FaMapMarkedAlt/>,
             to: "/",
             notification: 0,
 
-        },
-        {
-            label: "Data",
-            icon: <FaDatabase />, 
-            to: "/downloads",
-            notification: 0,
-        },
-        {
-            label: "About",
-            icon: <MdOutlineAnalytics />,
-            to: "/about",
-            notification: 0,
         }
     ];
 
@@ -117,7 +117,8 @@ const Sidebar = ({ onCitySelect }) => {
 
     return (
         <SSidebar>
-            <SThemeLabel>GRD-TRT-BUF-4I: Ground Truth Buffer for Idling</SThemeLabel>
+            <LargeTitle>GRD-TRT-BUF-4I</LargeTitle>
+            <SmallTitle>Ground Truth Buffer for Idling</SmallTitle>
             <SDivider />
             {linksArray.map(({ icon, label, notification, to, action }) => (
             <SLinkContainer key={label} isActive={pathname === to}>
@@ -156,8 +157,8 @@ const Sidebar = ({ onCitySelect }) => {
                         </p>
                         ))}
                     </div>
-                    )}
-                </SLinkContainer>
+                )}
+            </SLinkContainer>
         ))}
             {/* <SDivider />
             {secondaryLinksArray.map((item, index) => (
@@ -177,7 +178,7 @@ const Sidebar = ({ onCitySelect }) => {
                     isActive={theme === "dark"}
                     onClick={() => setTheme((p) => (p === "light" ? "dark" : "light"))}
                 >
-                    <SToggleThumb style={theme === "dark" ? { right: "1px" } : {}} />
+                <SToggleThumb style={theme === "dark" ? { right: "1px" } : {}} />
                 </SThemeToggler>
             </STheme>
         </SSidebar>

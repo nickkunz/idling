@@ -5,7 +5,6 @@ import Routes from '../../routes';
 
 const Layout = () => {
     const [selectedCity, setSelectedCity] = useState(null);
-
     const handleCitySelect = (coordinates, iataId) => {
         setSelectedCity({ coordinates, iataId });
     };
