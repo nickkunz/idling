@@ -92,7 +92,7 @@ def get_periods(data):
     return periods
 
 ## save csv data to disk
-def to_csv(data_period, output_dir, index_period):
+def to_csv(data_period, output_dir, data_index):
 
     ## ensure dataframe is not empty and 'datetime' column has no null vals
     if not data_period.empty and data_period['datetime'].notnull().all():
