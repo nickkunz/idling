@@ -78,7 +78,7 @@ function App({ selectedCity }) {
                     console.error('Data format unexpected:', fetchedData);
                 }
                 setDataLoaded(true);
-                setIsPlaying(true); // Start the animation after data is loaded
+                setIsPlaying(true); // start the animation after data is loaded
             })
             .catch(error => console.error('Error fetching data:', error));
     };
