@@ -6,16 +6,16 @@ const About = () => {
     return (
         <TextContainer>
             <LargeTitle>About</LargeTitle><br />
-            GRD-TRT-BUF-4I is the urban transit bus idling detection system drawn 
-            from the paper “Global Geolocated Realtime Data of Interfleet Urban 
-            Transit Bus Idling”. It offers a global perspective on the emergent 
-            behavior of interfleet idling patterns that contribute to worldwide 
-            ecological stress, economic inefficiency, and human health risks. 
-            This research aims to reduce idling emissions and improve urban air 
-            quality by providing a detailed and dynamic picture of interfleet 
-            idling behavior around the world to make our global communities 
-            healthier and more sustainable while reducing cost and increasing 
-            efficiency.<br /><br />
+            Drawn from the paper “Global Geolocated Realtime Data of Interfleet 
+            Urban Transit Bus Idling”,  GRD-TRT-BUF-4I offers a global perspective 
+            on the emergent behavior of interfleet idling patterns from worldwide 
+            urban transit bus fleet operations. This research aims to reduce the 
+            negative impacts of idling, which are known to degrade urban air quality, 
+            cause ecological stress, and create economic inefficiency. Only after 
+            we paint a detailed and dynamic picture of the problem, can we actively 
+            address it. We hope that this data serves to make our global communities 
+            healthier and more sustainable, while lowering cost and increasing efficiency.
+            <br /><br />
 
             <h4>Links</h4>
             <HorizontalList>

@@ -5,15 +5,6 @@
 # GRD-TRT-BUF-4I: Ground Truth Buffer for Idling
 An implementation of GRD-TRT-BUF-4I from the paper "Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling." The system detects, stores, and visualizes urban transit bus idling data in realtime. It is designed using containerized microservices and is configurable to deploy on any cloud-based platform. Each microservice is listed below with a brief description.
 
-### Microservices
-- __Extract__ (ext): Collects and parses protocol buffers from GTFS Realtime sources.
-- __Subset__ (sub): Filters and computes idling data for websocket streaming.
-- __Write__ (wrt): Inserts the idling data into persistent storage.
-- __Database__ (db): Manages idling data storage and retrieval.
-- __Read__ (rdb): Retrieves stored idling data from database. Also contains data tests.
-- __Interface__ (gui): Frontend idling data visualization and retrieval.
-
-### Version
 <!-- Unnamed Enterprise Edition 1.0.0 --> 
 <!-- Via Appia 0.9.X --> 
 <!-- Isidore 0.8.X --> 
@@ -23,8 +14,36 @@ An implementation of GRD-TRT-BUF-4I from the paper "Global Geolocated Realtime D
 <!-- Archimedes 0.4.X --> 
 <!-- Qanats 0.3.X --> 
 <!-- Eupalinos 0.2.X -->
-Imhotep 0.1.X<br>
-_Updated: Mar. 2024_
+__Version__: Imhotep 0.1.X<br>
+__Updated__: March 2024
+
+
+### Microservices
+- __Extract__ (ext): Collects and parses protocol buffers from GTFS Realtime sources.
+- __Subset__ (sub): Filters and computes idling data for websocket streaming.
+- __Write__ (wrt): Inserts the idling data into persistent storage.
+- __Database__ (db): Manages idling data storage and retrieval.
+- __Read__ (rdb): Retrieves stored idling data from database. Also contains data tests.
+- __Interface__ (gui): Frontend idling data visualization and retrieval.
+
+
+### Predeployed Endpoints
+- __Extract__ (ext): Use the ```/extract``` route for GTFS Realtime protobuf data and base route for testing.
+
+    ```https://idling-extract.gentlecliff-56a5f234.eastus.azurecontainerapps.io/```
+
+- __Subset__ (sub): Connect to the base route using the Socket.IO request type and listen for websocket events title `events`. 
+
+    ```https://idling-subset.gentlecliff-56a5f234.eastus.azurecontainerapps.io/```
+
+- __Read__ (rdb): Please see [Usage](#Usage) for usage notes. Use the base route for testing.
+
+    ```https://idling-read.gentlecliff-56a5f234.eastus.azurecontainerapps.io/```
+
+- __Interface__ (gui): Simply navigate to the base route in your browser to access the frontend.
+
+    ```https://idling-interface.gentlecliff-56a5f234.eastus.azurecontainerapps.io/```
+    
 
 ## Dependencies
 - Docker Desktop (Latest)
@@ -136,33 +155,12 @@ The design pattern follows these port conventions:
 - `4080`: __Read__ (rdb)
 - `3080`: __Interface__ (int)
 
-<!-- ## Deployment
-All microservices are designed to be deployed on any cloud platform. The following are steps to deploy on Azure. However, they will be similar for others such as AWS, GCP, etc.
-1. __Install Azure CLI__
-
-    Ensure that Azure CLI is installed on your local machine. You can download it here: 
-
-    https://docs.microsoft.com/en-us/cli/azure/install-azure-cli
-
-2. __Login to Azure__
-    
-        Login to your Azure account using the CLI.
-        ```bash
-        az login
-        ```
-3. __Create Resource Group__
-    
-        Create a resource group for the project.
-        ```bash
-        az group create --name <resource-group-name> --location <location>
-        ``` -->
-
 ## Usage
 1. __Connect to Websocket__
 
     Ensure the __Extract__ and __Subset__ microservices are running. Use an API client like <a href="https://www.postman.com">Postman</a> or similar and connect to the endpoint `ws://localhost:7080` using __Socket.IO__. 
     
-    Listen for the __Events__ titled `events`. There should be a continuous stream of idling data every 30 seconds in the following format:
+    Listen for the events titled `events`. There should be a continuous stream of idling data every 30 seconds in the following format:
     ```json
     {
         "iata_id": "",
@@ -256,7 +254,6 @@ GRD-TRT-BUF-4I is open for improvements and maintenance. Your help is valued to 
 Nick Kunz, Cornell University: nhk37@cornell.edu
 
 ## License
-
 © Nick Kunz, 2024. Licensed under the General Public License v3.0 (GPLv3).
 
 ## References
