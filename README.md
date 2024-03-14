@@ -36,7 +36,7 @@ __Updated__: March 2024
 
     ```https://idling-subset.gentlecliff-56a5f234.eastus.azurecontainerapps.io/```
 
-- __Read__ (rdb): Please see [Read Database](#read-database) for usage notes. Use the base route for testing.
+- __Read__ (rdb): Please see [Usage](##Usage) for usage notes. Use the base route for testing.
 
     ```https://idling-read.gentlecliff-56a5f234.eastus.azurecontainerapps.io/```
 
