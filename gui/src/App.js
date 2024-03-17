@@ -17,7 +17,7 @@ const App = () => {
             <ThemeProvider theme={themeStyle}>
                 <GlobalStyle />
                 <Helmet>
-                    <title>Ground Truth Buffer for Idling</title>
+                    <title>GRD-TRT-BUF-4I: Ground Truth Buffer for Idling</title>
                     <link rel="preconnect" href="https://fonts.googleapis.com" />
                     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
                     <link
