@@ -220,7 +220,7 @@ The design pattern follows these port conventions:
     Ensure the __Interface__ microservice is running. Navigate to `http://localhost:3080` in your browser to access the frontend interface.
 
 ## Citations
-Research
+<!-- Research -->
 ```
 @article{Kunz_2024,
   title         = {{Global Geolocated Realtime Data of Interfleet Urban Transit Bus Idling}},
@@ -233,7 +233,7 @@ Research
 }
 ```
 
-Software
+<!-- Software
 ```
 @misc{GRD-TRT-BUF-4I_2023,
   title         = {{GRD-TRT-BUF-4I: Ground Truth Buffer for Idling}},
@@ -244,7 +244,7 @@ Software
   url           = {https://github.com/nickkunz/idling},
   copyright     = {GPL v3.0}
 }
-```
+``` -->
 
 ## Contributions
 
