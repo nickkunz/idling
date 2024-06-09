@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS events (
     route_id VARCHAR(255),
     latitude FLOAT,
     longitude FLOAT,
-    datetime INT,
+    datetime BIGINT,
     duration INT,
     CONSTRAINT unique_columns UNIQUE (
         vehicle_id,
