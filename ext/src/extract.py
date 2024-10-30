@@ -1,6 +1,7 @@
 ## libraries
 import os
 import ssl
+import uuid
 import logging
 import aiohttp
 import asyncio
@@ -10,6 +11,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from google.transit import gtfs_realtime_pb2
 from aiohttp import ClientPayloadError
+from urllib.parse import urlparse
 
 ## params
 LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
@@ -166,21 +168,24 @@ class ExtractClient():
     async def run(self):
         connector = aiohttp.TCPConnector(
             ssl = ssl_context if 'https' in self.urls else False,
-            keepalive_timeout = 125
+            keepalive_timeout = 120
         )
 
         ## stop auto headers
         skip_auto_headers = {
             aiohttp.hdrs.USER_AGENT,
-            aiohttp.hdrs.ACCEPT_ENCODING, 
-            aiohttp.hdrs.HOST
+            aiohttp.hdrs.ACCEPT,
+            # aiohttp.hdrs.ACCEPT_ENCODING,
+            aiohttp.hdrs.CONNECTION,
+            aiohttp.hdrs.CACHE_CONTROL
         }
         headers_master = {
             'User-Agent': 'GRD-TRT-BUF-4I/0.0.1',
             'Accept': '*/*',
-            'Accept-Encoding': 'gzip, deflate, br',
+            # 'Accept-Encoding': 'gzip, deflate, br',
             'Connection': 'keep-alive',
-            'Cache-Control': 'no-cache'
+            'Cache-Control': 'no-cache',
+            'Request-Id': str(uuid.uuid4())  ## generate unique token for each request
         }
 
         ## create session
@@ -188,13 +193,18 @@ class ExtractClient():
             connector = connector,
             loop = asyncio.get_event_loop(),
             skip_auto_headers = skip_auto_headers,
-            trust_env = True
+            trust_env = True,
+            timeout = aiohttp.ClientTimeout(total = 120)
             ) as session:
 
             ## add headers and params for selected endpoints
             connection = list()
             for i, url in self.urls.items():
                 headers = headers_master.copy()
+
+                ## add host header based on the url's host
+                parsed_url = urlparse(url)
+                headers['Host'] = parsed_url.netloc
 
                 ## new york
                 if i == 'API_END_NYC':
@@ -417,7 +427,7 @@ class ExtractClient():
                         )
                     )
                     try:
-                        content = await k.content.read()  ## bytes data type
+                        content = await k.content.read()  ## read the bytes data type
 
                     ## payload error
                     except ClientPayloadError as e:
@@ -426,11 +436,13 @@ class ExtractClient():
                                 x = e
                                 )
                             )
+                    finally:
+                        await k.release()  ## release connection
 
                 ## parse protobuf
-                message = gtfs_realtime_pb2.FeedMessage()
-                if content is not None:
+                if content:
                     try:
+                        message = gtfs_realtime_pb2.FeedMessage()
                         message.ParseFromString(
                             bytes(content)
                         )
