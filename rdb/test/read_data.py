@@ -84,12 +84,13 @@ def get_periods(data):
         ## check for gaps longer than 10 minutes within the period
         diffs = data_period['datetime'].diff()
         if (diffs > 600).any():
-            start_time = end_period  ## gaps longer than 10 min, skip
+            gap_index = diffs[diffs > 600].index[0]
+            start_time = data_period.loc[gap_index, 'datetime']
         else:
-            periods.append(data_period)  ## gaps longer than 10 min, add
+            periods.append(data_period)
             start_time = end_period
 
-    return periods
+        return periods
 
 ## save csv data to disk
 def to_csv(data_period, output_dir, data_index):
