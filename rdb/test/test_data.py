@@ -764,7 +764,7 @@ if __name__ == '__main__':
     data['route_id'] = data['route_id'].astype(str)
     data['trip_id'] = data['trip_id'].astype(str)
 
-    ## test suite
+    ## define test suite
     suite = unittest.TestSuite()
 
     ## data types
