@@ -449,7 +449,8 @@ class ExtractClient():
                         logger.debug(msg = 'Client successfully parsed protobuf message.')
                     except Exception as e:
                         logger.error(
-                            msg = 'Client failed to parse protobuf message: {x}'.format(
+                            msg = 'Client failed to parse protobuf message from {url}: {x}'.format(
+                                url = url_log,
                                 x = e
                             )
                         )
