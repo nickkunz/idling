@@ -10,7 +10,6 @@ import configparser
 from datetime import datetime
 from dotenv import load_dotenv
 from google.transit import gtfs_realtime_pb2
-from aiohttp import ClientPayloadError
 from urllib.parse import urlparse
 
 ## params
@@ -186,14 +185,12 @@ class ExtractClient():
         skip_auto_headers = {
             aiohttp.hdrs.USER_AGENT,
             aiohttp.hdrs.ACCEPT,
-            # aiohttp.hdrs.ACCEPT_ENCODING,
             aiohttp.hdrs.CONNECTION,
             aiohttp.hdrs.CACHE_CONTROL
         }
         headers_master = {
             'User-Agent': 'GRD-TRT-BUF-4I/0.0.1',
             'Accept': '*/*',
-            # 'Accept-Encoding': 'gzip, deflate, br',
             'Connection': 'keep-alive',
             'Cache-Control': 'no-cache',
             'Request-Id': str(uuid.uuid4())  ## generate unique token for each request
