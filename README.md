@@ -14,7 +14,7 @@ An implementation of GRD-TRT-BUF-4I from the paper "Global Geolocated Realtime D
 <!-- Archimedes 0.4.X --> 
 <!-- Qanats 0.3.X --> 
 <!-- Eupalinos 0.2.X -->
-__Version__: Imhotep 0.1.1<br>
+__Version__: Imhotep 0.1.2<br>
 __Updated__: November 2024
 
 
