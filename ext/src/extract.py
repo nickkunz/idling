@@ -30,23 +30,23 @@ ssl_context.check_hostname = True
 ssl_context.verify_mode = ssl.CERT_REQUIRED
 
 ## selectors bug fix
-selectors._PollLikeSelector.modify = (selectors._BaseSelectorImpl.modify)
+selectors._PollLikeSelector.modify = selectors._BaseSelectorImpl.modify
 
 ## ini section keys
 def ini_key(file, sect = None):
 
     """
     Desc:
-        Loads a configuration variables from specified section in .ini file and 
-        returns them as a dictionary. If no section is specified, it returns all 
+        Loads configuration variables from specified section in .ini file and
+        returns them as a dictionary. If no section is specified, it returns all
         of the variables in the .ini file.
 
     Args:
         file (str): Path of the .ini configuration file.
-        sect (str): Name of the section witin the .ini file. Default is None.
+        sect (str): Name of the section within the .ini file. Default is None.
 
     Returns:
-        dict: A dictionary containing the key-value pairs of the specified section, 
+        dict: A dictionary containing the key-value pairs of the specified section,
         or all key-value pairs in the .ini file if no section is specified.
 
     Raises:
@@ -61,7 +61,7 @@ def ini_key(file, sect = None):
     if sect is not None and not isinstance(sect, str):
         raise TypeError("The 'sect' argument must be a string or None.")
 
-    ## input ini file 
+    ## input ini file
     config = configparser.ConfigParser()
     config.optionxform = lambda option: option  ## preserve uppercase vars
     config.read(file)
@@ -105,6 +105,17 @@ def env_var(file):
 
     return vars
 
+## fetch data
+async def fetch(session, url, headers = None, params = None):
+    try:
+        async with session.get(url = url, headers = headers, params = params) as response:
+            status = response.status
+            content = await response.read()
+            response_headers = response.headers
+            return status, content, response_headers
+    except Exception as e:
+        return e
+
 ## client to extract data
 class ExtractClient():
     def __init__(self, env_file, ini_file, ini_sect):
@@ -119,7 +130,7 @@ class ExtractClient():
 
         Returns:
             A tuple with three elements:
-            - A serialized protobuf message respons.
+            - A serialized protobuf message response.
             - An HTTP status code (200 good, 500 error).
             - A dictionary with three key-value pairs indicating content type, content
               length, and connection type.
@@ -163,7 +174,7 @@ class ExtractClient():
             )
         )
         return key
-    
+
     ## extract data
     async def run(self):
         connector = aiohttp.TCPConnector(
@@ -206,11 +217,15 @@ class ExtractClient():
                 parsed_url = urlparse(url)
                 headers['Host'] = parsed_url.netloc
 
+                ## default params
+                params = None
+
                 ## new york
                 if i == 'API_END_NYC':
                     params = {'key': self.keys['API_KEY_NYC']}
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers,
                             params = params
@@ -220,7 +235,8 @@ class ExtractClient():
                 elif i == 'API_END_DCA':
                     headers['api_key'] = self.keys['API_KEY_DCA']
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers
                         )
@@ -229,7 +245,8 @@ class ExtractClient():
                 elif i in ['API_END_LAX', 'API_END_MIA']:
                     headers['Authorization'] = self.keys['API_KEY_LBM']
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers
                         )
@@ -241,7 +258,8 @@ class ExtractClient():
                         'agency': 'RG'
                     }
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers,
                             params = params
@@ -253,7 +271,8 @@ class ExtractClient():
                         'key': self.keys['API_KEY_SAN']
                     }
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers,
                             params = params
@@ -263,7 +282,8 @@ class ExtractClient():
                 elif i == 'API_END_PDX':
                     params = {'appID': self.keys['API_KEY_PDX']}
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers,
                             params = params
@@ -273,7 +293,8 @@ class ExtractClient():
                 elif i == 'API_END_PHX':
                     params = {'apiKey': self.keys['API_KEY_PHX']}
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers,
                             params = params
@@ -284,7 +305,8 @@ class ExtractClient():
                     headers['apiKey'] = self.keys['API_KEY_YUL']
                     headers['Accept'] = 'application/x-protobuf'  ## required to return protobufs
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers
                         )
@@ -293,7 +315,8 @@ class ExtractClient():
                 elif i == 'API_END_YVR':
                     params = {'apikey': self.keys['API_KEY_YVR']}
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers,
                             params = params
@@ -303,7 +326,8 @@ class ExtractClient():
                 elif i == 'API_END_ARN':
                     params = {'key': self.keys['API_KEY_ARN']}
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers,
                             params = params
@@ -317,16 +341,18 @@ class ExtractClient():
                         keys = keys
                     )
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers
-                            )
                         )
+                    )
                 ## sydney
                 elif i == 'API_END_SYD':
                     headers['Authorization'] = 'apikey' + ' ' + self.keys['API_KEY_SYD']
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers
                         )
@@ -336,7 +362,8 @@ class ExtractClient():
                     headers['Ocp-Apim-Subscription-Key'] = self.keys['API_KEY_AKL']
                     headers['Accept'] = 'application/x-protobuf'  ## required to return protobufs
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers
                         )
@@ -345,7 +372,8 @@ class ExtractClient():
                 elif i == 'API_END_CHC':
                     headers['Ocp-Apim-Subscription-Key'] = self.keys['API_KEY_CHC']
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers
                         )
@@ -354,7 +382,8 @@ class ExtractClient():
                 elif i == 'API_END_DEL':
                     params = {'key': self.keys['API_KEY_DEL']}
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers,
                             params = params
@@ -363,7 +392,8 @@ class ExtractClient():
                 ## other cities without headers and params
                 else:
                     connection.append(
-                        session.get(
+                        fetch(
+                            session,
                             url = url,
                             headers = headers_master
                         )
@@ -371,73 +401,84 @@ class ExtractClient():
 
                 ## log request headers before sending requests
                 logger.debug('Request headers for {x}: {y}'.format(
-                        x = url,
-                        y = headers
-                    )
-                )
+                    x = url,
+                    y = headers
+                ))
 
             ## join requests and process responses
             response = await asyncio.gather(*connection, return_exceptions = True)
             feeds = bytes()
-            for url, k in enumerate(response):
+            for url_idx, result in enumerate(response):
 
                 ## log response status
-                url_log = list(self.urls.values())[url]
+                url_log = list(self.urls.values())[url_idx]
                 content = None
 
                 ## failed request
-                if isinstance(k, Exception):
-                    if hasattr(k, 'status'):
+                if isinstance(result, Exception):
+                    if hasattr(result, 'status'):
 
                         ## exceeded rate limit response
-                        if k.status == 429:
-                            t_retry = int(k.headers.get('Retry-After', 0))
+                        if result.status == 429:
+                            t_retry = int(result.headers.get('Retry-After', 0))
                             logger.warning(
                                 msg = 'GET request to {x} rate limited with HTTP status code {y}. Retry after {t} seconds.'.format(
                                     x = url_log,
-                                    y = k.status,
+                                    y = result.status,
                                     t = t_retry
                                 )
                             )
                             continue  # proceeds to next url upon exception
 
                         ## other unsuccessful response
-                        elif k.status != 200:
+                        elif result.status != 200:
                             logger.warning(
                                 msg = 'GET request to {x} unsuccessful with HTTP status code {y}.'.format(
                                     x = url_log,
-                                    y = k.status
+                                    y = result.status
                                 )
                             )
                             continue  ## proceeds to next url upon exception
                     else:
                         logger.error(
-                            msg = 'GET request to {x} failed with unknown HTTP status.'.format(
-                                x = url_log
+                            msg = 'GET request to {x} failed with exception: {e}.'.format(
+                                x = url_log,
+                                e = result
                             )
                         )
-                    continue ## proceeds to next url upon exception
+                    continue  ## proceeds to next url upon exception
 
                 ## successful response
                 else:
-                    logger.debug(
-                        msg = 'GET request to {x} successful with HTTP status code {y}.'.format(
-                            x = url_log,
-                            y = k.status
-                        )
-                    )
-                    try:
-                        content = await k.content.read()  ## read the bytes data type
+                    status, content, response_headers = result
 
-                    ## payload error
-                    except ClientPayloadError as e:
-                        logger.error(
-                            msg = '{x}.'.format(
-                                x = e
-                                )
+                    if status == 429:
+                        t_retry = int(response_headers.get('Retry-After', 0))
+                        logger.warning(
+                            msg = 'GET request to {x} rate limited with HTTP status code {y}. Retry after {t} seconds.'.format(
+                                x = url_log,
+                                y = status,
+                                t = t_retry
                             )
-                    finally:
-                        await k.release()  ## release connection
+                        )
+                        continue  # proceeds to next url upon exception
+
+                    elif status != 200:
+                        logger.warning(
+                            msg = 'GET request to {x} unsuccessful with HTTP status code {y}.'.format(
+                                x = url_log,
+                                y = status
+                            )
+                        )
+                        continue  ## proceeds to next url upon exception
+
+                    else:
+                        logger.debug(
+                            msg = 'GET request to {x} successful with HTTP status code {y}.'.format(
+                                x = url_log,
+                                y = status
+                            )
+                        )
 
                 ## parse protobuf
                 if content:
@@ -466,26 +507,25 @@ class ExtractClient():
                     }
 
                 # validate message header
-                if (message.header.gtfs_realtime_version == '2.0' or \
-                    message.header.gtfs_realtime_version == '1.0' or \
+                if (message.header.gtfs_realtime_version == '2.0' or
+                    message.header.gtfs_realtime_version == '1.0' or
                     message.header.gtfs_realtime_version == '0.1') and \
-                    message.header.incrementality == gtfs_realtime_pb2.FeedHeader.FULL_DATASET:
+                        message.header.incrementality == gtfs_realtime_pb2.FeedHeader.FULL_DATASET:
                     logger.debug(msg = 'Client successfully validated protobuf message header.')
 
                     ## validate entity
                     entity_valid = [j for j in message.entity if (
-                        (j.vehicle.vehicle.id or (j.vehicle.vehicle.label and j.id)) and \
-                        j.vehicle.timestamp and \
-                        j.vehicle.position.latitude and \
-                        j.vehicle.position.longitude and \
+                        (j.vehicle.vehicle.id or (j.vehicle.vehicle.label and j.id)) and
+                        j.vehicle.timestamp and
+                        j.vehicle.position.latitude and
+                        j.vehicle.position.longitude and
                         (j.vehicle.trip.route_id or j.vehicle.trip.trip_id)
-                        )
-                    ]
-                    url_key = list(self.urls.keys())[url]
+                    )]
+                    url_key = list(self.urls.keys())[url_idx]
                     for j in entity_valid:
                         if not j.vehicle.vehicle.id and j.vehicle.vehicle.label and j.id:
                             j.vehicle.vehicle.id = j.id  ## reassign vehicle id with label
-                        j.vehicle.vehicle.label = url_key.upper()[-3:]  ## reassign vehicle label with iata code
+                        j.vehicle.vehicle.label = url_key.upper()[-3:]  ## reassign vehicle label with IATA code
 
                     ## final message validation
                     del message.entity[:]
