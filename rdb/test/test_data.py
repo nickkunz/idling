@@ -616,14 +616,39 @@ class TestDuration(TestData):
 
     ## test idle duration average
     def test_duration_avg(self):
-        op_time = self.data.groupby('vehicle_id')['datetime'].agg(['min', 'max'])
-        op_time_min = self.data.sort_values('datetime').groupby('vehicle_id').first()
+        op_time = self.data.groupby(['agency', 'vehicle_id'])['datetime'].agg(['min', 'max'])
+        op_time_min = self.data.sort_values('datetime').groupby(['agency', 'vehicle_id']).first()
         op_time['min'] = op_time['min'] - op_time_min['duration']
-        op_time['id_time'] = self.data.groupby('vehicle_id')['duration'].sum()
         op_time['op_time'] = op_time['max'] - op_time['min']
-        id_time_prc = (self.data.groupby('vehicle_id')['duration'].sum() / op_time['op_time']) * 100
-        id_time_avg = round(number = id_time_prc.mean(), ndigits = 2)
         
+        ## feature mapping
+        feat_map = ['iata_id', 'city', 'country', 'region', 'continent']
+        for i in feat_map:
+            mp = self.data.sort_values('datetime').groupby(['agency', 'vehicle_id'])[i].first()
+            op_time[i] = op_time.index.map(mp)
+
+        ## feature order
+        op_time = op_time.reset_index()
+        feat_ord = [
+            'iata_id',
+            'agency',
+            'city',
+            'country',
+            'region',
+            'continent',
+            'vehicle_id',
+            'op_time'
+        ]
+        op_time = op_time[feat_ord]
+
+        ## mean proportion of idle time
+        op_time_idx = op_time.set_index(['agency', 'vehicle_id'])['op_time']
+        id_time_idx = self.data.groupby(['agency', 'vehicle_id'])['duration'].sum()
+        if not op_time_idx.index.duplicated().any() and not id_time_idx.index.duplicated().any():
+            id_time_prc = (id_time_idx / op_time_idx)
+            id_time_prc = id_time_prc[id_time_prc <= 1] ## remove errors where idling time is greater than operating time
+            id_time_avg = round(id_time_prc.mean() * 100, ndigits = 2)
+
         print("Average proportion of idle time: {x} %".format(
             x = id_time_avg
             )
@@ -651,15 +676,43 @@ class TestDuration(TestData):
     ## test idle duration average adjusted for longer than 5 min
     def test_duration_avg_adj(self):
         id_five = self.data[self.data['duration'] > 300]  ## 5 min
-        op_time = self.data.groupby('vehicle_id')['datetime'].agg(['min', 'max'])
-        op_time_min = id_five.sort_values('datetime').groupby('vehicle_id').first()
+        op_time = self.data.groupby(['agency', 'vehicle_id'])['datetime'].agg(['min', 'max'])
+        op_time_min = id_five.sort_values('datetime').groupby(['agency', 'vehicle_id']).first()
         op_time['min'] = op_time['min'] - op_time_min['duration']
-        op_time['id_time'] = id_five.groupby('vehicle_id')['duration'].sum()
         op_time['op_time'] = op_time['max'] - op_time['min']
 
-        id_time_prc_adj = (id_five.groupby('vehicle_id')['duration'].sum() / op_time['op_time']) * 100
-        id_time_prc_adj = round(number = id_time_prc_adj.mean(), ndigits = 2)
-        print('Average proportion of idle time longer than 5 minutes: ' + str(id_time_prc_adj) + '%')
+        ## feature mapping
+        feat_map = ['iata_id', 'city', 'country', 'region', 'continent']
+        for i in feat_map:
+            mp = id_five.sort_values('datetime').groupby(['agency', 'vehicle_id'])[i].first()
+            op_time[i] = op_time.index.map(mp)
+
+        ## feature order
+        op_time = op_time.reset_index()
+        feat_ord = [
+            'iata_id', 
+            'agency', 
+            'city', 
+            'country',
+            'region',
+            'continent',
+            'vehicle_id',
+            'op_time'
+        ]
+        op_time = op_time[feat_ord]
+
+        ## mean proportion of idle time
+        op_time_idx = op_time.set_index(['agency', 'vehicle_id'])['op_time']
+        id_time_idx = id_five.groupby(['agency', 'vehicle_id'])['duration'].sum()
+        if not op_time_idx.index.duplicated().any() and not id_time_idx.index.duplicated().any():
+            id_time_prc_adj = (id_time_idx / op_time_idx)
+            id_time_prc_adj = id_time_prc_adj[id_time_prc_adj <= 1] ## remove errors where idling time is greater than operating time
+            id_time_prc_adj = round(id_time_prc_adj.mean() * 100, ndigits = 2)
+
+        print("Average proportion of idle time longer than 5 minutes: {x} %".format(
+            x = id_time_prc_adj
+            )
+        )
 
         ## est 30% to 44% idle time taken from existing studies
         id_time_prc_adj_min = 30  ## lower bound est 30% (no adjustment)
@@ -685,13 +738,14 @@ if __name__ == '__main__':
 
     ## load test data
     cwd = os.getcwd()
-    # path = '/rdb/test/data/test-data-a.csv'
+    path = '/rdb/test/data/test-data-a.csv'
     # path = '/rdb/test/data/test-data-b.csv'
     # path = '/rdb/test/data/test-data-c.csv'
     # path = '/rdb/test/data/test-data-d.csv'
     # path = '/rdb/test/data/test-data-e.csv'
-    path = '/rdb/test/data/test-data-f.csv'
-    
+    # path = '/rdb/test/data/test-data-f.csv'
+    # path = '/rdb/test/data/test-data-g.csv'
+
     data = pd.read_csv(
         filepath_or_buffer = cwd + path,
         low_memory = False,
@@ -710,7 +764,7 @@ if __name__ == '__main__':
     data['route_id'] = data['route_id'].astype(str)
     data['trip_id'] = data['trip_id'].astype(str)
 
-    ## test suite
+    ## define test suite
     suite = unittest.TestSuite()
 
     ## data types
@@ -734,6 +788,8 @@ if __name__ == '__main__':
     suite.addTest(TestDuplication(data, 'test_duplicate_rows'))
 
     suite.addTest(TestMissingness(data, 'test_null_cols'))
+    suite.addTest(TestMissingness(data, 'test_null_iata_id'))
+    suite.addTest(TestMissingness(data, 'test_null_iata_data'))
     suite.addTest(TestMissingness(data, 'test_null_agency'))
     suite.addTest(TestMissingness(data, 'test_null_city'))
     suite.addTest(TestMissingness(data, 'test_null_country'))

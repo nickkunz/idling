@@ -1,3 +1,3 @@
 #!/bin/sh
 /etc/init.d/nginx start
-npm start
+npm run build

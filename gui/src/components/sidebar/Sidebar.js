@@ -86,10 +86,11 @@ const Sidebar = ({ onCitySelect }) => {
     };
     const linksArray = [
         {
-            label: "About",
-            icon: <MdOutlineAnalytics />,
-            to: "/about",
+            label: "Cities",
+            icon: <FaMapMarkedAlt/>,
+            to: "/",
             notification: 0,
+
         },
         {
             label: "Data",
@@ -98,11 +99,10 @@ const Sidebar = ({ onCitySelect }) => {
             notification: 0,
         },
         {
-            label: "Live",
-            icon: <FaMapMarkedAlt/>,
-            to: "/",
+            label: "About",
+            icon: <MdOutlineAnalytics />,
+            to: "/about",
             notification: 0,
-
         }
     ];
 
@@ -122,15 +122,15 @@ const Sidebar = ({ onCitySelect }) => {
             <SDivider />
             {linksArray.map(({ icon, label, notification, to, action }) => (
             <SLinkContainer key={label} isActive={pathname === to}>
-                <SLink to={to} onClick={label === "Live" ? toggleCitiesDropdown : action || (() => {})}>
+                <SLink to={to} onClick={label === "Cities" ? toggleCitiesDropdown : action || (() => {})}>
                     <SLinkIcon>{icon}</SLinkIcon>
                     <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                         <SLinkLabel style={{ marginRight: '8px' }}>{label}</SLinkLabel>
-                        {label === "Live" && <FaChevronDown />}
+                        {label === "Cities" && <FaChevronDown />}
                     </div>
                     {!!notification && <SLinkNotification>{notification}</SLinkNotification>}
                 </SLink>
-                {label === "Live" && isCitiesDropdownOpen && (
+                {label === "Cities" && isCitiesDropdownOpen && (
                     <div style={{ 
                         padding: '12px', 
                         maxHeight: '300px', 
