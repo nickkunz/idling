@@ -5,6 +5,23 @@ export const TextContainer = styled.div`
   width: 50%;
 `;
 
+export const TextContainerWide = styled.div`
+  width: 75%;
+  padding: 0px; // Optional: Add padding for better spacing
+  box-sizing: border-box; // Ensure padding is included in the width
+  max-height: 93vh; // Set the maximum height to the viewport height
+  overflow-y: auto; // Make the container scrollable if content overflows
+
+  /* Hide scrollbar for Webkit browsers (Chrome, Safari) */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge, and Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+`;
+
 export const HorizontalList = styled.ul`
   display: flex;
   justify-content: flex-start;
