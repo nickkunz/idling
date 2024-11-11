@@ -6,15 +6,16 @@ const About = () => {
     return (
         <TextContainer>
             <LargeTitle>About</LargeTitle><br />
-            Drawn from the paper “Global Geolocated Realtime Data of Interfleet 
-            Urban Transit Bus Idling”,  GRD-TRT-BUF-4I offers a global perspective 
-            on the emergent behavior of interfleet idling patterns from worldwide 
-            urban transit bus fleet operations. This research aims to reduce the 
-            negative impacts of idling, which are known to degrade urban air quality, 
-            cause ecological stress, and create economic inefficiency. Only after 
-            we paint a detailed and dynamic picture of the problem, can we actively 
-            address it. We hope that this data serves to make our global communities 
-            healthier and more sustainable, while lowering cost and increasing efficiency.
+            From the paper <i>“Global Geolocated Realtime Data of Interfleet 
+            Urban Transit Bus Idling”</i>, GRD-TRT-BUF-4I (Ground Truth Buffer for Idling) 
+            offers a global perspective on the emergent behavior of interfleet idling 
+            patterns from worldwide urban transit bus operations. This work aims to 
+            exhibit the issue's ubiquity and scale as a first step in reducing its 
+            many negative impacts, including air pollution, ecological stress, 
+            and economic inefficiency. Only after we measure and illustrate a 
+            detailed and dynamic picture of the problem, can we actively address it. 
+            We hope that this data helps to make our global communities healthier 
+            and more sustainable, while lowering cost and increasing efficiency.
             <br /><br />
 
             <h4>Links</h4>

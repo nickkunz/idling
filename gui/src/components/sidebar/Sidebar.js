@@ -1,5 +1,5 @@
-import React, { useContext, useState } from "react";
-import { FaMapMarkedAlt, FaChevronDown, FaDatabase } from "react-icons/fa";
+import React, { useContext, useState, useEffect } from "react";
+import { FaMapMarkedAlt, FaChevronDown, FaChevronUp, FaDatabase } from "react-icons/fa";
 import { MdOutlineAnalytics } from "react-icons/md";
 import { ThemeContext } from "../../App";
 import { useLocation } from "react-router-dom";
@@ -16,7 +16,8 @@ import {
     STheme,
     SThemeLabel,
     SThemeToggler,
-    SToggleThumb
+    SToggleThumb,
+    SCityListContainer
 } from "./styles";
 
 const live = [
@@ -76,111 +77,99 @@ const live = [
 const Sidebar = ({ onCitySelect }) => {
     const { pathname } = useLocation();
     const { setTheme, theme } = useContext(ThemeContext);
-    const [isCitiesDropdownOpen, setIsCitiesDropdownOpen] = useState(false);
+    const [isCitiesDropdownOpen, setIsCitiesDropdownOpen] = useState(true);
+
+    // Collapse the city list if on the About or Data page
+    useEffect(() => {
+        if (pathname === "/about" || pathname === "/data") {
+            setIsCitiesDropdownOpen(false);
+        }
+    }, [pathname]);
+    
     const toggleCitiesDropdown = () => setIsCitiesDropdownOpen(prev => !prev);
     const handleCityClick = (city) => {
         if (onCitySelect) {
-          onCitySelect(city.coordinates, city.iata_id); 
+            onCitySelect(city.coordinates, city.iata_id); 
         }
-        setIsCitiesDropdownOpen(false);
+        // Do not close the dropdown
     };
+
     const linksArray = [
+        {
+            label: "About",
+            icon: <MdOutlineAnalytics />,
+            to: "/about",
+            notification: 0,
+        },
         {
             label: "Cities",
             icon: <FaMapMarkedAlt/>,
             to: "/",
             notification: 0,
-
         },
         {
             label: "Data",
             icon: <FaDatabase />, 
             to: "/data",
             notification: 0,
-        },
-        {
-            label: "About",
-            icon: <MdOutlineAnalytics />,
-            to: "/about",
-            notification: 0,
         }
     ];
 
-    // const secondaryLinksArray = [
-    //     {
-    //         label: "Developers",
-    //         icon: <BsPeople />,
-    //         to: "/developers",
-    //         notification: 0,
-    //     }
-    // ];
-
     return (
         <SSidebar>
-            <LargeTitle>GRD-TRT-BUF-4I</LargeTitle>
-            <SmallTitle>Ground Truth Buffer for Idling</SmallTitle>
-            <SDivider />
-            {linksArray.map(({ icon, label, notification, to, action }) => (
-            <SLinkContainer key={label} isActive={pathname === to}>
-                <SLink to={to} onClick={label === "Cities" ? toggleCitiesDropdown : action || (() => {})}>
-                    <SLinkIcon>{icon}</SLinkIcon>
-                    <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                        <SLinkLabel style={{ marginRight: '8px' }}>{label}</SLinkLabel>
-                        {label === "Cities" && <FaChevronDown />}
-                    </div>
-                    {!!notification && <SLinkNotification>{notification}</SLinkNotification>}
-                </SLink>
-                {label === "Cities" && isCitiesDropdownOpen && (
-                    <div style={{ 
-                        padding: '12px', 
-                        maxHeight: '300px', 
-                        overflowY: 'auto'
-                    }}>
-                        <style>
-                            {`
-                                div::-webkit-scrollbar {
-                                    width: 15px; // Adjust the width of the scrollbar
-                                }
-
-                                div::-webkit-scrollbar-thumb {
-                                    background: #888; // Color of the scrollbar thumb
-                                }
-
-                                div::-webkit-scrollbar-thumb:hover {
-                                    background: #555; // Color when hovered
-                                }
-                            `}
-                        </style>
-                        {live.map((city) => (
-                        <p key={city.iata_id} style={{ margin: '5px 0' }} onClick={() => handleCityClick(city)}>
-                            {city.name}
-                        </p>
-                        ))}
-                    </div>
-                )}
-            </SLinkContainer>
-        ))}
-            {/* <SDivider />
-            {secondaryLinksArray.map((item, index) => (
-                item.isDivider ? <SDivider key={index} /> : (
-                    <SLinkContainer key={item.label}>
-                        <SLink to="/">
-                            <SLinkIcon>{item.icon}</SLinkIcon>
-                            <SLinkLabel>{item.label}</SLinkLabel>
+            <div>
+                <LargeTitle>GRD-TRT-BUF-4I</LargeTitle>
+                <SmallTitle>Ground Truth Buffer for Idling</SmallTitle>
+                <SDivider />
+                {linksArray.map(({ icon, label, notification, to, action }) => (
+                    <SLinkContainer key={label} isActive={pathname === to}>
+                        <SLink to={to} onClick={label === "Cities" ? toggleCitiesDropdown : action || (() => {})}>
+                            <SLinkIcon>{icon}</SLinkIcon>
+                            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                                <SLinkLabel style={{ marginRight: '8px' }}>{label}</SLinkLabel>
+                                {label === "Cities" && (!isCitiesDropdownOpen ? <FaChevronDown /> : <FaChevronUp />)}
+                            </div>
+                            {!!notification && <SLinkNotification>{notification}</SLinkNotification>}
                         </SLink>
+                        {label === "Cities" && isCitiesDropdownOpen && (
+                            <SCityListContainer>
+                                <style>
+                                    {`
+                                        div::-webkit-scrollbar {
+                                            width: 15px; // Adjust the width of the scrollbar
+                                        }
+
+                                        div::-webkit-scrollbar-thumb {
+                                            background: #888; // Color of the scrollbar thumb
+                                        }
+
+                                        div::-webkit-scrollbar-thumb:hover {
+                                            background: #555; // Color when hovered
+                                        }
+                                    `}
+                                </style>
+                                {live.map((city) => (
+                                    <p key={city.iata_id} style={{ margin: '5px 0' }} onClick={() => handleCityClick(city)}>
+                                        {city.name}
+                                    </p>
+                                ))}
+                            </SCityListContainer>
+                        )}
                     </SLinkContainer>
-                )
-            ))}  */}
-            <SDivider />
-            <STheme>
-                <SThemeLabel>Dark Mode</SThemeLabel>
-                <SThemeToggler
-                    isActive={theme === "dark"}
-                    onClick={() => setTheme((p) => (p === "light" ? "dark" : "light"))}
-                >
-                <SToggleThumb style={theme === "dark" ? { right: "1px" } : {}} />
-                </SThemeToggler>
-            </STheme>
+                ))}
+            </div>
+            <div>
+                <SDivider />
+                <STheme>
+                    <SThemeLabel>Dark Mode</SThemeLabel>
+                    <SThemeToggler
+                        isActive={theme === "dark"}
+                        onClick={() => setTheme((p) => (p === "light" ? "dark" : "light"))}
+                    >
+                        <SToggleThumb style={theme === "dark" ? { right: "1px" } : {}} />
+                    </SThemeToggler>
+                </STheme>
+            </div>
         </SSidebar>
     );
 };

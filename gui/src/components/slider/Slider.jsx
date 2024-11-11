@@ -12,7 +12,8 @@ const PositionContainer = styled('div')({
     width: '100%',
     display: 'flex',
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    gap: '18px', // space between play/pause button and slider
 });
 
 const SliderInput = withStyles({
