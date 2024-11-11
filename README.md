@@ -30,20 +30,20 @@ __Updated__: November 2024
 ### Predeployed Endpoints
 - __Extract__ (ext): Use the ```/extract``` route for GTFS Realtime protobuf data and base route for testing.
 
-    ```https://idling-extract.gentlecliff-56a5f234.eastus.azurecontainerapps.io/```
+    ```https://idling-extract.redpebble-aeec30b4.westus.azurecontainerapps.io/```
 
 - __Subset__ (sub): Connect to the base route using the Socket.IO request type and listen for websocket events title `events`. 
 
-    ```https://idling-subset.gentlecliff-56a5f234.eastus.azurecontainerapps.io/```
+    ```https://idling-subset.redpebble-aeec30b4.westus.azurecontainerapps.io/```
 
 - __Read__ (rdb): Please see [Usage](#Usage) for usage notes. Use the base route for testing.
 
-    ```https://idling-read.gentlecliff-56a5f234.eastus.azurecontainerapps.io/```
+    ```https://idling-read.redpebble-aeec30b4.westus.azurecontainerapps.io/```
 
 - __Interface__ (gui): Simply navigate to the base route in your browser to access the frontend.
 
-    ```https://idling-interface.gentlecliff-56a5f234.eastus.azurecontainerapps.io/```
-    
+    ```https://idling-interface.redpebble-aeec30b4.westus.azurecontainerapps.io/```
+
 
 ## Dependencies
 - Docker Desktop (Latest)
@@ -207,12 +207,12 @@ The design pattern follows these port conventions:
 
     For example, to retrieve all idling events in New York City in CSV format:
     ```
-    http://localhost:4080/idling?format=csv&iata_id=NYC
+    http://localhost:4080/idle?format=csv&iata_id=NYC
     ```
 
     or to retrieve all idling events in Montreal longer than 5 minutes in GeoJSON format:
     ```
-    http://localhost:4080/idling?format=geojson&iata_id=YUL&min_duration=300
+    http://localhost:4080/idle?format=geojson&iata_id=YUL&min_duration=300
     ```
 
 4. __Browse Interface__
