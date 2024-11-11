@@ -15,10 +15,21 @@ export const SSidebar = styled.div`
     flex-shrink: 0;
     box-sizing: border-box;
     background: ${({ theme }) => theme.bg};
-    height: 100vh;
+    height: 100vh; // Set the height to 100% of the viewport height
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; // Ensure content is spaced appropriately
     padding: ${v.lgSpacing};
     position: relative;
     overflow-y: hidden;
+`;
+
+export const SCityListContainer = styled.div`
+    flex-grow: 1;  // Allow the city list to grow and take up remaining space
+    overflow-y: auto; // Ensure the city list is scrollable if content overflows
+    padding: 0px 0px 10px 20px;
+    max-height: 33vh; // Set a maximum height to prevent the list from expanding off the page
+    margin-bottom: 20px; // Add padding at the bottom to create space for the scrollbar
 `;
 
 export const SSidebarButton = styled.button`
