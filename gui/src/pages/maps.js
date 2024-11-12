@@ -8,6 +8,7 @@ import { ThemeContext } from '../App';
 import RangeInput from '../components/slider/Slider';
 
 // params
+const REACT_APP_GEOJSON_DATA = process.env.REACT_APP_GEOJSON_DATA;
 const REACT_APP_MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 const MAP_ZOOM = 12;
 
@@ -61,7 +62,9 @@ function LiveMap({ selectedCity }) {
         setIsPlaying(false);
         setCurrentTime(null);
         setDataLoaded(false);
-        fetch(url)
+        const fullUrl = `${REACT_APP_GEOJSON_DATA}${url}`;
+        console.log(`Fetching data from: ${fullUrl}`);
+        fetch(fullUrl)
             .then(response => response.json())
             .then(fetchedData => {
                 if (fetchedData.features && fetchedData.features.length > 0) {
