@@ -2,7 +2,7 @@ import styled from "styled-components";
 import { v } from "../../styles/variables";
 
 export const TextContainer = styled.div`
-  width: 50%;
+  width: 45%;
 `;
 
 export const TextContainerWide = styled.div`
