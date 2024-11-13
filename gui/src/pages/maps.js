@@ -6,6 +6,7 @@ import { ColumnLayer, ScatterplotLayer } from '@deck.gl/layers';
 import { v } from '../styles/variables';
 import { ThemeContext } from '../App';
 import RangeInput from '../components/slider/Slider';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 // params
 const REACT_APP_GEOJSON_DATA = process.env.REACT_APP_GEOJSON_DATA;
@@ -62,10 +63,16 @@ function LiveMap({ selectedCity }) {
         setIsPlaying(false);
         setCurrentTime(null);
         setDataLoaded(false);
-        const fullUrl = `${REACT_APP_GEOJSON_DATA}${url}`;
+        const fullUrl = `/idle${url}`;  // rev proxy request through nginx
         console.log(`Fetching data from: ${fullUrl}`);
+    
         fetch(fullUrl)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(fetchedData => {
                 if (fetchedData.features && fetchedData.features.length > 0) {
                     const timestamps = fetchedData.features.map(d =>
@@ -82,9 +89,8 @@ function LiveMap({ selectedCity }) {
                     setAnimationEndTime(maxTime);
                     setCurrentTime(minTime);
                     setIsPlaying(true);  // start the animation after data is loaded
-                
-                // no data available
                 } else {
+                    // no data available
                     setData([]);
                     setAnimationStartTime(null);
                     setAnimationEndTime(null);
@@ -93,8 +99,6 @@ function LiveMap({ selectedCity }) {
                 }
                 setDataLoaded(true);
             })
-            
-            // handle fetch error
             .catch(error => {
                 console.error('Error fetching data:', error);
                 setData([]);
@@ -117,14 +121,14 @@ function LiveMap({ selectedCity }) {
     // fetch data in nyc for last n hours
     useEffect(() => {
         const startTimestamp = fetchDataHours(96);
-        fetchData(`/idle?iata_id=NYC&start_datetime=${startTimestamp}`);  // init loci
+        fetchData(`?iata_id=NYC&start_datetime=${startTimestamp}`);  // init loci
     }, []);
 
     // fetch data in selected city for last n hours
     useEffect(() => {
         if (selectedCity) {
             const startTimestamp = fetchDataHours(96);
-            fetchData(`/idle?iata_id=${selectedCity.iataId}&start_datetime=${startTimestamp}`); 
+            fetchData(`?iata_id=${selectedCity.iataId}&start_datetime=${startTimestamp}`); 
         } 
     }, [selectedCity])
 
