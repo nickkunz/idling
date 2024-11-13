@@ -53,7 +53,7 @@ function LiveMap({ selectedCity }) {
     }, [userInteracted]);
 
     useEffect(() => {
-        const interval = setInterval(animate, 200);  // update every 200 milliseconds
+        const interval = setInterval(animate, 200);  // update every 200 ms
         return () => clearInterval(interval);
     }, [animate]);
 
@@ -111,9 +111,9 @@ function LiveMap({ selectedCity }) {
 
     // posix timestamp for n hours ago in UTC (sec)
     const fetchDataHours = (hours) => {
-        const nowUTC = new Date().getTime(); // Current time in milliseconds (UTC)
-        const startUTC = nowUTC - (hours * 60 * 60 * 1000); // Subtract n hours in milliseconds
-        return Math.floor(startUTC / 1000); // Convert to seconds
+        const nowUTC = new Date().getTime();  // current time in ms (UTC)
+        const startUTC = nowUTC - (hours * 60 * 60 * 1000);  // subtract n hours in ms
+        return Math.floor(startUTC / 1000); // convert to sec
     };
 
     // fetch data in nyc for last n hours
@@ -144,7 +144,7 @@ function LiveMap({ selectedCity }) {
                     }
                     return newTime;
                 });
-            }, 200);  // update every 200 milliseconds
+            }, 200);  // update every 200 ms
         }
         return () => clearInterval(interval);
     }, [isPlaying, dataLoaded, data.length, currentTime, animationStartTime, animationEndTime]);
