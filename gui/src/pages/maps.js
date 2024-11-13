@@ -9,7 +9,6 @@ import RangeInput from '../components/slider/Slider';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 // params
-const REACT_APP_GEOJSON_DATA = process.env.REACT_APP_GEOJSON_DATA;
 const REACT_APP_MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 const MAP_ZOOM = 12;
 
@@ -112,11 +111,10 @@ function LiveMap({ selectedCity }) {
 
     // posix timestamp for n hours ago in UTC (sec)
     const fetchDataHours = (hours) => {
-        const now = new Date();
-        const nowUTC = new Date(now.toISOString());  // ensures UTC regardless of local settings
-        const startUTC = new Date(nowUTC.getTime() - hours * 60 * 60 * 1000);  // subtract n hours (ms)
-        return Math.floor(startUTC.getTime() / 1000);  // convert to timestamp (sec)
-    }
+        const nowUTC = new Date().getTime(); // Current time in milliseconds (UTC)
+        const startUTC = nowUTC - (hours * 60 * 60 * 1000); // Subtract n hours in milliseconds
+        return Math.floor(startUTC / 1000); // Convert to seconds
+    };
 
     // fetch data in nyc for last n hours
     useEffect(() => {
