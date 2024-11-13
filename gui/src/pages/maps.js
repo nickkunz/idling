@@ -6,6 +6,7 @@ import { ColumnLayer, ScatterplotLayer } from '@deck.gl/layers';
 import { v } from '../styles/variables';
 import { ThemeContext } from '../App';
 import RangeInput from '../components/slider/Slider';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 // params
 const REACT_APP_MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
@@ -27,10 +28,10 @@ function LiveMap({ selectedCity }) {
     const [animationEndTime, setAnimationEndTime] = useState(null);
     const [userInteracted, setUserInteracted] = useState(false);
     const [tooltipInfo, setTooltipInfo] = useState(null);
-    const [isPlaying, setIsPlaying] = useState(true);
+    const [isPlaying, setIsPlaying] = useState(false);
     const [viewport, setViewport] = useState({
-        longitude: -73.9776,  // nyc lon
-        latitude: 40.7420,  // nyc lat
+        longitude: -74.0060,  // nyc lon
+        latitude: 40.7128,  // nyc lat
         zoom: MAP_ZOOM,
         bearing: 60,
         pitch: 55
@@ -39,11 +40,11 @@ function LiveMap({ selectedCity }) {
     // map and sidebar style
     const { theme } = useContext(ThemeContext);
     const mapStyle = theme === 'dark' ? 'mapbox://styles/mapbox/dark-v9' : 'mapbox://styles/mapbox/light-v9';
-    const maxDuration = Math.max(...data.map(d => d.properties.duration));
+    const maxDuration = data.length > 0 ? Math.max(...data.map(d => d.properties.duration)) : 1;  // avoid division by zero
 
     // map rotation animation logic
     const animate = useCallback(() => {
-        if (!userInteracted) {
+        if (!userInteracted) {  // only animate if a city is selected
             setViewport(v => ({
                 ...v,
                 bearing: v.bearing + 0.1
@@ -52,62 +53,89 @@ function LiveMap({ selectedCity }) {
     }, [userInteracted]);
 
     useEffect(() => {
-        const interval = setInterval(animate, 200);  // update every x milliseconds
+        const interval = setInterval(animate, 200);  // update every 200 ms
         return () => clearInterval(interval);
     }, [animate]);
 
     // fetch data from server
     const fetchData = (url) => {
-        fetch(url)
-            .then(response => response.json())
+        setIsPlaying(false);
+        setCurrentTime(null);
+        setDataLoaded(false);
+        const fullUrl = `/idle${url}`;  // rev proxy request through nginx
+        console.log(`Fetching data from: ${fullUrl}`);
+    
+        fetch(fullUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(fetchedData => {
-                if (fetchedData.features) {
+                if (fetchedData.features && fetchedData.features.length > 0) {
                     const timestamps = fetchedData.features.map(d =>
                         new Date(d.properties.datetime).getTime()
                     );
+                    const minTime = Math.min(...timestamps);
+                    const maxTime = Math.max(...timestamps);
+    
                     setData(fetchedData.features.map(d => ({
                         ...d,
                         timestamp: new Date(d.properties.datetime).getTime()
                     })));
-                    const minTime = Math.min(...timestamps);
-                    const maxTime = Math.max(...timestamps);
                     setAnimationStartTime(minTime);
                     setAnimationEndTime(maxTime);
                     setCurrentTime(minTime);
+                    setIsPlaying(true);  // start the animation after data is loaded
                 } else {
-                    console.error('Data format unexpected:', fetchedData);
+                    // no data available
+                    setData([]);
+                    setAnimationStartTime(null);
+                    setAnimationEndTime(null);
+                    setCurrentTime(null);
+                    setIsPlaying(false);  // stop the animation
                 }
                 setDataLoaded(true);
-                setIsPlaying(true); // start the animation after data is loaded
             })
-            .catch(error => console.error('Error fetching data:', error));
+            .catch(error => {
+                console.error('Error fetching data:', error);
+                setData([]);
+                setAnimationStartTime(null);
+                setAnimationEndTime(null);
+                setCurrentTime(null);
+                setIsPlaying(false);  // stop the animation
+                setDataLoaded(true);
+            });
     };
 
-    // posix timestamp last 24 hours
-    const fetchData24Hours = () => {
-        const now = new Date();
-        const twentyFourHours = new Date(now.getTime() - 24 * 60 * 60 * 1000);  // last 24 hours
-        return Math.floor(twentyFourHours.getTime() / 1000);  // convert to posix timestamp
-    }
+    // posix timestamp for n hours ago in UTC (sec)
+    const fetchDataHours = (hours) => {
+        const nowUTC = new Date().getTime();  // current time in ms (UTC)
+        const startUTC = nowUTC - (hours * 60 * 60 * 1000);  // subtract n hours in ms
+        return Math.floor(startUTC / 1000); // convert to sec
+    };
 
-    // fetch data for NYC last 24 hours
+    // fetch data in nyc for last n hours
     useEffect(() => {
-        const roundedNow = fetchData24Hours();
-        fetchData(`/idle?iata_id=NYC&start_datetime=${roundedNow}`);  // init loci
+        const startTimestamp = fetchDataHours(96);
+        fetchData(`?iata_id=NYC&start_datetime=${startTimestamp}`);  // init loci
     }, []);
 
-    // fetch data for selected city last 24 hours
+    // fetch data in selected city for last n hours
     useEffect(() => {
         if (selectedCity) {
-            const roundedNow = fetchData24Hours();
-            fetchData(`/idle?iata_id=${selectedCity.iataId}&start_datetime=${roundedNow}`); 
+            const startTimestamp = fetchDataHours(96);
+            fetchData(`?iata_id=${selectedCity.iataId}&start_datetime=${startTimestamp}`); 
         } 
     }, [selectedCity])
 
     // animation logic
     useEffect(() => {
         let interval;
-        if (isPlaying && currentTime !== null) {
+
+        // animate only if playing, data is loaded, and there is data
+        if (isPlaying && dataLoaded && data.length > 0) {
             interval = setInterval(() => {
                 setCurrentTime(time => {
                     const newTime = time + 1000;  // increment every second
@@ -116,26 +144,25 @@ function LiveMap({ selectedCity }) {
                     }
                     return newTime;
                 });
-            }, 200);  // update every x milliseconds
+            }, 200);  // update every 200 ms
         }
         return () => clearInterval(interval);
-    }, [isPlaying, currentTime, animationStartTime, animationEndTime]);
+    }, [isPlaying, dataLoaded, data.length, currentTime, animationStartTime, animationEndTime]);
 
     // update view and start animation
     useEffect(() => {
         if (selectedCity) {
             setViewport(prev => ({
-            ...prev,
-            longitude: selectedCity.coordinates.longitude,
-            latitude: selectedCity.coordinates.latitude,
-            zoom: MAP_ZOOM  // reset zoom to default
+                ...prev,
+                longitude: selectedCity.coordinates.longitude,
+                latitude: selectedCity.coordinates.latitude,
+                zoom: MAP_ZOOM  // reset zoom to default
             }));
-
             setCurrentTime(animationStartTime);
             setUserInteracted(false);
             setIsPlaying(true);  // start the animation
-            }
-        }, [selectedCity, animationStartTime])
+        }
+    }, [selectedCity, animationStartTime]);
 
     // spacebar play/pause keyboard shortcut
     useEffect(() => {
@@ -152,22 +179,6 @@ function LiveMap({ selectedCity }) {
     }, []);
 
     // filter data by time
-    useEffect(() => {
-        let animationInterval;
-        if (isPlaying && dataLoaded) {
-            animationInterval = setInterval(() => {
-                setCurrentTime(time => {
-                    const newTime = time + 1000;
-                    if (newTime > animationEndTime) {
-                        return animationStartTime;
-                    }
-                    return newTime;
-                });
-            }, 200);
-        }
-        return () => clearInterval(animationInterval);
-    }, [isPlaying, currentTime, dataLoaded, animationStartTime, animationEndTime]);
-
     const filteredData = currentTime !== null ? data.filter(d => d.timestamp <= currentTime) : [];
 
     // render data viz
@@ -274,17 +285,19 @@ function LiveMap({ selectedCity }) {
             }}>
                 Hold Down "Shift" + Drag Mouse to Rotate
             </div>
-            <RangeInput
-                min={animationStartTime}
-                max={animationEndTime}
-                value={currentTime}
-                isPlaying={isPlaying}
-                setIsPlaying={setIsPlaying}
-                onChange={(newValue) => {
-                    setIsPlaying(false); // Pause the animation
-                    setCurrentTime(newValue);
-                }}
-            />
+            {dataLoaded && data.length > 0 && (
+                <RangeInput
+                    min={animationStartTime}
+                    max={animationEndTime}
+                    value={currentTime}
+                    isPlaying={isPlaying}
+                    setIsPlaying={setIsPlaying}
+                    onChange={(newValue) => {
+                        setIsPlaying(false);
+                        setCurrentTime(newValue);
+                    }}
+                />
+            )}
         </DeckGL>
     );
 }
@@ -322,7 +335,7 @@ function Minimap({ viewport }) {
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
-                transform: 'translate(-50%, -50%)',  // centers the loci
+                transform: 'translate(-50%, -50%)',  // centers the marker
                 height: 10,
                 width: 10,
                 backgroundColor: 'orange',

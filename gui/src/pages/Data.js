@@ -8,7 +8,7 @@ const Data = () => {
         <TextContainerWide>
             <LargeTitle>Data</LargeTitle><br/>
             <h3>Realtime</h3>
-            Idling data is provided realtime via Websocket (Socket.IO). Use the following endpoint and listen for events titled <i>"events"</i>.<br/><br/>
+            Idling data is provided realtime via Websocket (Socket.IO). Use the following endpoint and listen for events titled <code>events</code>.<br/><br/>
 
             <code><b>https://idling-subset.redpebble-aeec30b4.westus.azurecontainerapps.io/</b></code><br/><br/>
 
@@ -64,7 +64,8 @@ const Data = () => {
             </ul><br/>
             
             <h3>Database</h3>
-            For advanced queries, the database can be accessed directly. Please see the <StyledLink href="/about">About</StyledLink> page to contact us for more information.
+            For more advanced queries, the database can be accessed directly.<br/>
+            Please see the <StyledLink href="/about">About</StyledLink> page to contact us for more information.
         </TextContainerWide>
     );
 };

@@ -11,10 +11,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get clean &&\
     apt-get update &&\
     apt-get upgrade -y &&\
-    apt-get install -y curl software-properties-common &&\
+    apt-get install -y curl software-properties-common nginx &&\
     curl -sL https://deb.nodesource.com/setup_20.x | bash - &&\
-    apt-get install -y nodejs\
-    nginx
+    apt-get install -y nodejs
 
 ## reduce dependencies
 RUN apt-get autoremove -y &&\
@@ -40,7 +39,8 @@ COPY . /app
 ## install nodejs libraires and build
 ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN npm cache clean --force &&\
-    npm install
+    npm install &&\
+    npm run build
 
 ## create non-root user and permissions
 RUN groupadd -g 999 group &&\
