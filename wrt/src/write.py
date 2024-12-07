@@ -146,6 +146,14 @@ class WriteClient():
             if not self.sio.connected:
                 logger.warning(msg = 'Client is not connected to the websocket server.')
                 return
+        
+            ## check if connection is closed and attempt to reconnect
+            if self.connect.closed != 0:
+                logger.warning("Database connection closed. Attempting to reconnect...")
+                self.db_conn()
+                if self.connect.closed != 0:
+                    logger.error("Failed to reconnect to database before processing events.")
+                    return
 
             ## parse json response
             try:
@@ -153,53 +161,64 @@ class WriteClient():
                 if len(data) == 0:
                     logger.warning(msg = 'Client received empty websocket response.')
                     return
-
             except Exception as e:
                 logger.error(msg = 'Client failed to parse websocket response.')
+                return
 
             ## insert events into table
-            with self.lock:
-                cursor = self.connect.cursor()
-                for i in data:
-                    query = self.db_read(path = self.sql_events)
-                    logger.debug(msg = 'Client successfully read SQL query.')
-                    try:
-                        cursor.execute(
-                            query = query,
-                            vars = (
-                                str(i['iata_id']),
-                                str(i['vehicle_id']),
-                                str(i['trip_id']),
-                                str(i['route_id']),
-                                float(i['latitude']),
-                                float(i['longitude']),
-                                str(i['iata_id']),
-                                str(i['vehicle_id']),
-                                str(i['trip_id']),
-                                str(i['route_id']),
-                                float(i['latitude']),
-                                float(i['longitude']),
-                                int(i['datetime']),
-                                int(i['duration']),
-                                int(i['duration'])
+            max_write_retries = 5
+            for attempt in range(1, max_write_retries + 1):
+                try:
+                    with self.lock:
+                        cursor = self.connect.cursor()
+                        for i in data:
+                            query = self.db_read(path = self.sql_events)
+                            logger.debug('Client successfully read SQL query.')
+                            
+                            cursor.execute(
+                                query = query,
+                                vars = (
+                                    str(i['iata_id']),
+                                    str(i['vehicle_id']),
+                                    str(i['trip_id']),
+                                    str(i['route_id']),
+                                    float(i['latitude']),
+                                    float(i['longitude']),
+                                    str(i['iata_id']),
+                                    str(i['vehicle_id']),
+                                    str(i['trip_id']),
+                                    str(i['route_id']),
+                                    float(i['latitude']),
+                                    float(i['longitude']),
+                                    int(i['datetime']),
+                                    int(i['duration']),
+                                    int(i['duration'])
+                                )
                             )
-                        )
-
-                        ## save changes to database
+                        # If all inserts go fine, commit and log success
                         self.connect.commit()
-                        logger.debug(msg = 'Client successfully wrote single observation to database.')
+                        logger.info('Client successfully wrote observations to database.')
+                        break
 
-                    ## undo failed attempt
-                    except Exception as e:
-                        self.connect.rollback()
-                        logger.error(
-                            msg = 'Client failed to write to database: {x}.'.format(
-                                x = e
-                            )
-                        )
+                except psycopg2.InterfaceError as ie:
+                    logger.error(f'Database connection lost during write (Attempt {attempt}): {ie}')
+                    self.db_conn()
+                    if attempt == max_write_retries:
+                        logger.error('Exceeded maximum write retries due to connection issues.')
                         return
-                
-                logger.info(msg = 'Client successfully wrote observations to database.')
+
+                ## undo failed attempt
+                except Exception as e:
+                    self.connect.rollback()
+                    logger.error(
+                        msg = 'Client failed to write to database: {x}.'.format(
+                            x = e
+                        )
+                    )
+                    if attempt == max_write_retries:
+                        logger.error('Exceeded maximum write retries due to repeated errors.')
+                        return
+                    time.sleep(1)
 
     ## connect to websocket with threading
     def ws_thrd(self):
