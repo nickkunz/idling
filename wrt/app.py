@@ -1,6 +1,7 @@
 ## libraries
 import os
 import sys
+import threading
 from flask import Flask, Response, request, abort
 
 ## source
@@ -40,12 +41,15 @@ client = WriteClient(
     sql_events = SQL_EVENTS
 )
 
+## background thread flag
+service_running = threading.Event()
+
 ## test app
 @app.route(rule = '/', methods = ['GET'])
 def test():
     if request.args:
         abort(code = 400, text = 'Application test does not accept parameters.')
-    app.logger.info(msg = 'Application layer tested sucessfully.')
+    app.logger.info(msg = 'Application tested sucessfully.')
     return Response(response = None, status = 200)
 
 ## write websocket data to database
@@ -53,10 +57,24 @@ def test():
 def write():
     if request.args:
         abort(code = 400, text = 'Application does not accept parameters.')
-    client.run()
-    app.logger.info(msg = 'Application layer started sucessfully.')
+    if service_running.is_set():
+        app.logger.warning('Application is already running.')
+        return Response(
+            response = 'Application is already running.',
+            status = 200
+        )
+
+    def start_service():
+        app.logger.info('Application starting as a background thread.')
+        client.run()
+
+    service_thread = threading.Thread(target = start_service, daemon = True)
+    service_thread.start()
+    service_running.set()
+
+    app.logger.info(msg = 'Application started sucessfully.')
     return Response(
-        response = 'Write application started. Beginning to write to database.',
+        response = 'Application started sucessfully. Writing to database...',
         status = 200
     )
 

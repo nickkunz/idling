@@ -59,8 +59,7 @@ class WriteClient():
                         user = self.db_user,
                         password = self.db_pswd,
                         host = self.db_host,
-                        port = self.db_port,
-                        sslmode = "require"
+                        port = self.db_port
                     )
                     logger.info("Connection pool successfully created.")
                     break
@@ -334,7 +333,7 @@ class WriteClient():
                 while not self.sio.connected:  ## wait for websocket connection
                     time.sleep(1)
 
-                logger.info("All connections established. Running main loop.")
+                logger.info("All connections established.")
 
                 ## main loop
                 while True:
