@@ -333,7 +333,7 @@ class WriteClient():
                 while not self.sio.connected:  ## wait for websocket connection
                     time.sleep(1)
 
-                logger.info("All connections established. Running main loop.")
+                logger.info("All connections established.")
 
                 ## main loop
                 while True:
