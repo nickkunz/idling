@@ -59,8 +59,7 @@ class WriteClient():
                         user = self.db_user,
                         password = self.db_pswd,
                         host = self.db_host,
-                        port = self.db_port,
-                        sslmode = "require"
+                        port = self.db_port
                     )
                     logger.info("Connection pool successfully created.")
                     break
