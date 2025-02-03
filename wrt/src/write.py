@@ -200,6 +200,7 @@ class WriteClient():
                         return
                 
                 logger.info(msg = 'Client successfully wrote observations to database.')
+                cursor.close()
 
     ## connect to websocket with threading
     def ws_thrd(self):
