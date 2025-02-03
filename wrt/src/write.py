@@ -159,48 +159,47 @@ class WriteClient():
 
             ## insert events into table
             with self.lock:
-                cursor = self.connect.cursor()
-                for i in data:
-                    query = self.db_read(path = self.sql_events)
-                    logger.debug(msg = 'Client successfully read SQL query.')
-                    try:
-                        cursor.execute(
-                            query = query,
-                            vars = (
-                                str(i['iata_id']),
-                                str(i['vehicle_id']),
-                                str(i['trip_id']),
-                                str(i['route_id']),
-                                float(i['latitude']),
-                                float(i['longitude']),
-                                str(i['iata_id']),
-                                str(i['vehicle_id']),
-                                str(i['trip_id']),
-                                str(i['route_id']),
-                                float(i['latitude']),
-                                float(i['longitude']),
-                                int(i['datetime']),
-                                int(i['duration']),
-                                int(i['duration'])
+                query = self.db_read(path = self.sql_events)
+                logger.debug(msg = 'Client successfully read SQL query.')
+                with self.connect.cursor() as cursor:  ## create cursor once
+                    for i in data:        
+                        try:
+                            cursor.execute(
+                                query = query,
+                                vars = (
+                                    str(i['iata_id']),
+                                    str(i['vehicle_id']),
+                                    str(i['trip_id']),
+                                    str(i['route_id']),
+                                    float(i['latitude']),
+                                    float(i['longitude']),
+                                    str(i['iata_id']),
+                                    str(i['vehicle_id']),
+                                    str(i['trip_id']),
+                                    str(i['route_id']),
+                                    float(i['latitude']),
+                                    float(i['longitude']),
+                                    int(i['datetime']),
+                                    int(i['duration']),
+                                    int(i['duration'])
+                                )
                             )
-                        )
 
-                        ## save changes to database
-                        self.connect.commit()
-                        logger.debug(msg = 'Client successfully wrote single observation to database.')
+                            ## save changes to database
+                            self.connect.commit()
+                            logger.debug(msg = 'Client successfully wrote single observation to database.')
 
-                    ## undo failed attempt
-                    except Exception as e:
-                        self.connect.rollback()
-                        logger.error(
-                            msg = 'Client failed to write to database: {x}.'.format(
-                                x = e
+                        ## undo failed attempt
+                        except Exception as e:
+                            self.connect.rollback()
+                            logger.error(
+                                msg = 'Client failed to write to database: {x}.'.format(
+                                    x = e
+                                )
                             )
-                        )
-                        return
-                
-                logger.info(msg = 'Client successfully wrote observations to database.')
-                cursor.close()
+                            return
+                    
+                    logger.info(msg = 'Client successfully wrote observations to database.')
 
     ## connect to websocket with threading
     def ws_thrd(self):
