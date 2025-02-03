@@ -141,6 +141,7 @@ class WriteClient():
                 logger.warning(msg = 'Client received empty ping from server.')
                 self.sio.emit('pong', 'default data')
 
+        self.sql_insert = self.db_read(path = self.sql_events)
         @self.sio.on('events')  ## listen for events titled 'events'
         def on_message(json_data):
             if not self.sio.connected:
@@ -159,7 +160,7 @@ class WriteClient():
 
             ## insert events into table
             with self.lock:
-                query = self.db_read(path = self.sql_events)
+                query = self.sql_insert ## insert query
                 logger.debug(msg = 'Client successfully read SQL query.')
                 with self.connect.cursor() as cursor:  ## create cursor once
                     for i in data:        
@@ -185,10 +186,6 @@ class WriteClient():
                                 )
                             )
 
-                            ## save changes to database
-                            self.connect.commit()
-                            logger.debug(msg = 'Client successfully wrote single observation to database.')
-
                         ## undo failed attempt
                         except Exception as e:
                             self.connect.rollback()
@@ -198,7 +195,8 @@ class WriteClient():
                                 )
                             )
                             return
-                    
+                    ## save changes to database
+                    self.connect.commit()              
                     logger.info(msg = 'Client successfully wrote observations to database.')
 
     ## connect to websocket with threading
