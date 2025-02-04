@@ -1,6 +1,6 @@
 # GRD-TRT-BUF-4I: Read Microservice
 
-__Version__: 0.1.2<br>
+__Version__: 0.1.3<br>
 __Updated__: February 2025
 
 ## Dependencies

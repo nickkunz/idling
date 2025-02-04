@@ -7,14 +7,15 @@ import psycopg2
 import flask
 
 ## params
-LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
+LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO').upper()
+logger = logging.getLogger(__name__)
+logger.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
 
 ## logging
 fmt = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 hdlr = logging.StreamHandler()
 hdlr.setFormatter(fmt = fmt)
-logging.basicConfig(level = LOG_LEVEL, handlers = [hdlr])
-logger = logging.getLogger(name = __name__)
+logger.addHandler(hdlr)
 logger.propagate = True
 
 ## error handling
@@ -42,8 +43,13 @@ class ReadClient():
     ## connect to database
     def db_conn(self):
         if hasattr(self, 'connect') and self.connect.closed == 0:
-            logger.info(msg = 'Database connection already exists.')
-            return
+            try:
+                with self.connect.cursor() as cur:
+                    cur.execute("SELECT 1")  ## verify connection is active
+                logger.info("Database connection is active.")
+                return
+            except psycopg2.Error:
+                logger.warning("Existing connection is invalid, reconnecting...")
         i = 0
         while i < self.recon_tries:
             try:
@@ -55,8 +61,8 @@ class ReadClient():
                     port = self.db_port,
                     connect_timeout = self.recon_timeo
                 )
-                logger.info(msg = 'Client successfully connected to database.')
-                i += 1
+                self.connect.set_session(readonly = True)  ## enforce read-only mode
+                logger.info(msg = 'Client successfully connected to database in read only mode.')
                 break
             except psycopg2.OperationalError as e:
                 logger.error(msg = 'Client failed to connect to database. Reconnection attempt {x} of {y}: {z}.'.format(
@@ -68,7 +74,7 @@ class ReadClient():
                 if i == self.recon_tries - 1:
                     raise
                 else:
-                    time.sleep(self.recon_timeo)
+                    time.sleep(self.recon_delay)
                     i += 1
         if i == self.recon_tries:
             logger.error(msg = 'Client failed to connect to database. Max number of reconnection attempts reached.')
@@ -87,16 +93,13 @@ class ReadClient():
             geojson["features"].append(feat_copy)
         return geojson
 
-    ## csv encoder
+    ## build csv data
     def to_csv(self, data, headers):
         if not data:
-            return None
-        
-        ## build csv data
-        if headers:
-            csv_data = [headers] + [list(i) for i in data]
+            csv_data = [headers] if headers else []  ## headers but no data
         else:
-            csv_data = [list(i) for i in data]
+            csv_data = [headers] + [list(i) for i in data] if headers else [list(i) for i in data]
+        
         csv = '\n'.join([','.join(map(str, i)) for i in csv_data])
 
         ## build http response
@@ -126,7 +129,7 @@ class ReadClient():
                 if table == 'agency':
                     query, values = self.agency_query(params)
                     data = self.db_read(query = query, values = values)
-                    return flask.jsonify(data)
+                    return flask.jsonify(data or {'message': 'No data found.'})
 
                 elif table == 'events':
                     query, values = self.events_query(params)
@@ -149,7 +152,7 @@ class ReadClient():
                         }
                     }
                     data = self.to_geojson(data = data, feat = feat)
-                    return flask.jsonify(data)
+                    return flask.jsonify(data or {'message': 'No data found.'})
 
                 elif table == 'idle':
                     query, values = self.idle_query(params)
@@ -177,7 +180,7 @@ class ReadClient():
                         }
                     }
                     data = self.to_geojson(data = data, feat = feat)
-                    return flask.jsonify(data)
+                    return flask.jsonify(data or {'message': 'No data found.'})
 
             ## handle errors
             except Exception as e:
@@ -268,7 +271,7 @@ class ReadClient():
             try:
                 cur.execute("SET statement_timeout = 300000") ## statement timeout to 5 mins
                 cur.execute(query, values)
-                data = cur.fetchall()
+                data = cur.fetchall() or []
 
                 ## return csv data when accept header received
                 if flask.request.headers.get('Accept') == 'text/csv':
@@ -432,16 +435,17 @@ class ReadClient():
 
     ## close database connection
     def db_close(self):
-        if hasattr(self, 'connect'):
+        if hasattr(self, 'connect') and self.connect and self.connect.closed == 0:
             try:
-                if self.connect.closed == 0:
-                    self.connect.close()
-                    logger.info(msg = 'Client successfully closed database connection.')
+                self.connect.close()
+                logger.info('Client successfully closed database connection.')
             except Exception as e:
                 logger.error(
                     msg = 'Client error closing database connection: {x}'.format(
                         x = e
                     )
                 )
+            finally:
+                self.connect = None  ## stop further access to a closed connection
 
 ## end program
