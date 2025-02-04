@@ -87,13 +87,16 @@ class ReadClient():
             geojson["features"].append(feat_copy)
         return geojson
 
-    ## build csv data
+    ## csv encoder
     def to_csv(self, data, headers):
         if not data:
-            csv_data = [headers] if headers else []  ## headers but no data
-        else:
-            csv_data = [headers] + [list(i) for i in data] if headers else [list(i) for i in data]
+            return None
         
+        ## build csv data
+        if headers:
+            csv_data = [headers] + [list(i) for i in data]
+        else:
+            csv_data = [list(i) for i in data]
         csv = '\n'.join([','.join(map(str, i)) for i in csv_data])
 
         ## build http response
@@ -429,17 +432,16 @@ class ReadClient():
 
     ## close database connection
     def db_close(self):
-        if hasattr(self, 'connect') and self.connect and self.connect.closed == 0:
+        if hasattr(self, 'connect'):
             try:
-                self.connect.close()
-                logger.info('Client successfully closed database connection.')
+                if self.connect.closed == 0:
+                    self.connect.close()
+                    logger.info(msg = 'Client successfully closed database connection.')
             except Exception as e:
                 logger.error(
                     msg = 'Client error closing database connection: {x}'.format(
                         x = e
                     )
                 )
-            finally:
-                self.connect = None  ## stop further access to a closed connection
 
 ## end program
