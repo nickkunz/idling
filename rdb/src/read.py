@@ -37,6 +37,7 @@ class ReadClient():
         self.db_port = db_port
         self.recon_tries = recon_tries
         self.recon_delay = recon_delay
+        self.recon_timeo = recon_timeo
 
     ## connect to database
     def db_conn(self):
