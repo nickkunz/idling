@@ -1,5 +1,8 @@
 # GRD-TRT-BUF-4I: Subset Microservice
 
+__Version__: 0.1.1<br>
+__Updated__: October 2024
+
 ## Dependencies
 1. OS: Ubuntu 20.04 LTS (Focal Fossa)
 2. Language: Python 3.8 

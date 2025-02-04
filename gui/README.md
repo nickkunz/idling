@@ -1,5 +1,8 @@
 # GRD-TRT-BUF-4I: Interface Microservice
 
+__Version__: 0.1.3<br>
+__Updated__: November 2024
+
 ## Dependencies
 - OS: Ubuntu 20.04 LTS (Focal Fossa)
 - Language: JavaScript (V8 v11.3, Chromium 113)
