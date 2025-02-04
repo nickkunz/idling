@@ -7,15 +7,14 @@ import psycopg2
 import flask
 
 ## params
-LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO').upper()
-logger = logging.getLogger(__name__)
-logger.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
+LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
 
 ## logging
 fmt = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 hdlr = logging.StreamHandler()
 hdlr.setFormatter(fmt = fmt)
-logger.addHandler(hdlr)
+logging.basicConfig(level = LOG_LEVEL, handlers = [hdlr])
+logger = logging.getLogger(name = __name__)
 logger.propagate = True
 
 ## error handling
@@ -266,7 +265,7 @@ class ReadClient():
             try:
                 cur.execute("SET statement_timeout = 300000") ## statement timeout to 5 mins
                 cur.execute(query, values)
-                data = cur.fetchall() or []
+                data = cur.fetchall()
 
                 ## return csv data when accept header received
                 if flask.request.headers.get('Accept') == 'text/csv':
