@@ -43,8 +43,13 @@ class ReadClient():
     ## connect to database
     def db_conn(self):
         if hasattr(self, 'connect') and self.connect.closed == 0:
-            logger.info(msg = 'Database connection already exists.')
-            return
+            try:
+                with self.connect.cursor() as cur:
+                    cur.execute("SELECT 1")  ## verify connection is active
+                logger.info("Database connection is active.")
+                return
+            except psycopg2.Error:
+                logger.warning("Existing connection is invalid, reconnecting...")
         i = 0
         while i < self.recon_tries:
             try:
@@ -88,16 +93,13 @@ class ReadClient():
             geojson["features"].append(feat_copy)
         return geojson
 
-    ## csv encoder
+    ## build csv data
     def to_csv(self, data, headers):
         if not data:
-            return None
-        
-        ## build csv data
-        if headers:
-            csv_data = [headers] + [list(i) for i in data]
+            csv_data = [headers] if headers else []  ## headers but no data
         else:
-            csv_data = [list(i) for i in data]
+            csv_data = [headers] + [list(i) for i in data] if headers else [list(i) for i in data]
+        
         csv = '\n'.join([','.join(map(str, i)) for i in csv_data])
 
         ## build http response
@@ -443,5 +445,7 @@ class ReadClient():
                         x = e
                     )
                 )
+            finally:
+                self.connect = None  ## stop further access to a closed connection
 
 ## end program
