@@ -55,8 +55,8 @@ class ReadClient():
                     port = self.db_port,
                     connect_timeout = self.recon_timeo
                 )
-                logger.info(msg = 'Client successfully connected to database.')
-                i += 1
+                self.connect.set_session(readonly = True)  ## enforce read-only mode
+                logger.info(msg = 'Client successfully connected to database in read only mode.')
                 break
             except psycopg2.OperationalError as e:
                 logger.error(msg = 'Client failed to connect to database. Reconnection attempt {x} of {y}: {z}.'.format(
@@ -68,7 +68,7 @@ class ReadClient():
                 if i == self.recon_tries - 1:
                     raise
                 else:
-                    time.sleep(self.recon_timeo)
+                    time.sleep(self.recon_delay)
                     i += 1
         if i == self.recon_tries:
             logger.error(msg = 'Client failed to connect to database. Max number of reconnection attempts reached.')
@@ -126,7 +126,7 @@ class ReadClient():
                 if table == 'agency':
                     query, values = self.agency_query(params)
                     data = self.db_read(query = query, values = values)
-                    return flask.jsonify(data)
+                    return flask.jsonify(data or {'message': 'No data found.'})
 
                 elif table == 'events':
                     query, values = self.events_query(params)
@@ -149,7 +149,7 @@ class ReadClient():
                         }
                     }
                     data = self.to_geojson(data = data, feat = feat)
-                    return flask.jsonify(data)
+                    return flask.jsonify(data or {'message': 'No data found.'})
 
                 elif table == 'idle':
                     query, values = self.idle_query(params)
@@ -177,7 +177,7 @@ class ReadClient():
                         }
                     }
                     data = self.to_geojson(data = data, feat = feat)
-                    return flask.jsonify(data)
+                    return flask.jsonify(data or {'message': 'No data found.'})
 
             ## handle errors
             except Exception as e:
@@ -432,11 +432,10 @@ class ReadClient():
 
     ## close database connection
     def db_close(self):
-        if hasattr(self, 'connect'):
+        if hasattr(self, 'connect') and self.connect and self.connect.closed == 0:
             try:
-                if self.connect.closed == 0:
-                    self.connect.close()
-                    logger.info(msg = 'Client successfully closed database connection.')
+                self.connect.close()
+                logger.info('Client successfully closed database connection.')
             except Exception as e:
                 logger.error(
                     msg = 'Client error closing database connection: {x}'.format(
