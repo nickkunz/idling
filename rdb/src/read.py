@@ -43,13 +43,8 @@ class ReadClient():
     ## connect to database
     def db_conn(self):
         if hasattr(self, 'connect') and self.connect.closed == 0:
-            try:
-                with self.connect.cursor() as cur:
-                    cur.execute("SELECT 1")  ## verify connection is active
-                logger.info("Database connection is active.")
-                return
-            except psycopg2.Error:
-                logger.warning("Existing connection is invalid, reconnecting...")
+            logger.info(msg = 'Database connection already exists.')
+            return
         i = 0
         while i < self.recon_tries:
             try:
