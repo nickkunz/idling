@@ -7,15 +7,14 @@ import psycopg2
 import flask
 
 ## params
-LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO').upper()
-logger = logging.getLogger(__name__)
-logger.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
+LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
 
 ## logging
 fmt = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 hdlr = logging.StreamHandler()
 hdlr.setFormatter(fmt = fmt)
-logger.addHandler(hdlr)
+logging.basicConfig(level = LOG_LEVEL, handlers = [hdlr])
+logger = logging.getLogger(name = __name__)
 logger.propagate = True
 
 ## error handling
@@ -43,13 +42,8 @@ class ReadClient():
     ## connect to database
     def db_conn(self):
         if hasattr(self, 'connect') and self.connect.closed == 0:
-            try:
-                with self.connect.cursor() as cur:
-                    cur.execute("SELECT 1")  ## verify connection is active
-                logger.info("Database connection is active.")
-                return
-            except psycopg2.Error:
-                logger.warning("Existing connection is invalid, reconnecting...")
+            logger.info(msg = 'Database connection already exists.')
+            return
         i = 0
         while i < self.recon_tries:
             try:
@@ -93,13 +87,16 @@ class ReadClient():
             geojson["features"].append(feat_copy)
         return geojson
 
-    ## build csv data
+    ## csv encoder
     def to_csv(self, data, headers):
         if not data:
-            csv_data = [headers] if headers else []  ## headers but no data
-        else:
-            csv_data = [headers] + [list(i) for i in data] if headers else [list(i) for i in data]
+            return None
         
+        ## build csv data
+        if headers:
+            csv_data = [headers] + [list(i) for i in data]
+        else:
+            csv_data = [list(i) for i in data]
         csv = '\n'.join([','.join(map(str, i)) for i in csv_data])
 
         ## build http response
@@ -271,7 +268,7 @@ class ReadClient():
             try:
                 cur.execute("SET statement_timeout = 300000") ## statement timeout to 5 mins
                 cur.execute(query, values)
-                data = cur.fetchall() or []
+                data = cur.fetchall()
 
                 ## return csv data when accept header received
                 if flask.request.headers.get('Accept') == 'text/csv':
@@ -435,17 +432,16 @@ class ReadClient():
 
     ## close database connection
     def db_close(self):
-        if hasattr(self, 'connect') and self.connect and self.connect.closed == 0:
+        if hasattr(self, 'connect'):
             try:
-                self.connect.close()
-                logger.info('Client successfully closed database connection.')
+                if self.connect.closed == 0:
+                    self.connect.close()
+                    logger.info(msg = 'Client successfully closed database connection.')
             except Exception as e:
                 logger.error(
                     msg = 'Client error closing database connection: {x}'.format(
                         x = e
                     )
                 )
-            finally:
-                self.connect = None  ## stop further access to a closed connection
 
 ## end program
