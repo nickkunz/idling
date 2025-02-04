@@ -12,7 +12,7 @@ workers = 1  ## one request at a time
 threads = 1
 
 ## timeouts
-timeout = 120
+timeout = 300
 graceful_timeout = timeout + 5
 keepalive = 125
 
