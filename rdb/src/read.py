@@ -37,7 +37,6 @@ class ReadClient():
         self.db_port = db_port
         self.recon_tries = recon_tries
         self.recon_delay = recon_delay
-        self.recon_timeo = recon_timeo
 
     ## connect to database
     def db_conn(self):
@@ -52,7 +51,8 @@ class ReadClient():
                     user = self.db_user,
                     password = self.db_pswd,
                     host = self.db_host,
-                    port = self.db_port
+                    port = self.db_port,
+                    connect_timeout = self.recon_timeo
                 )
                 logger.info(msg = 'Client successfully connected to database.')
                 i += 1
@@ -265,6 +265,7 @@ class ReadClient():
     def db_read(self, query, values):
         with self.connect.cursor() as cur:
             try:
+                cur.execute("SET statement_timeout = 300000") ## statement timeout to 5 mins
                 cur.execute(query, values)
                 data = cur.fetchall()
 
