@@ -118,14 +118,14 @@ function LiveMap({ selectedCity }) {
 
     // fetch data in nyc for last n hours
     useEffect(() => {
-        const startTimestamp = fetchDataHours(96);
+        const startTimestamp = fetchDataHours(24);
         fetchData(`?iata_id=NYC&start_datetime=${startTimestamp}`);  // init loci
     }, []);
 
     // fetch data in selected city for last n hours
     useEffect(() => {
         if (selectedCity) {
-            const startTimestamp = fetchDataHours(96);
+            const startTimestamp = fetchDataHours(24);
             fetchData(`?iata_id=${selectedCity.iataId}&start_datetime=${startTimestamp}`); 
         } 
     }, [selectedCity])
