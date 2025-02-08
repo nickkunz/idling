@@ -53,44 +53,59 @@ def db_read(conn):
     return data.drop(['prev_datetime'], axis = 1)
 
 ## find 24-hour periods
-def get_periods(data):
+def get_periods(data: pd.DataFrame) -> list:
     """
     Desc:
-        Divide the DataFrame into contiguous 24-hour periods with no gaps longer
-        than 10 minutes.
+        Split the data into non-overlapping 24-hour segments with no single gap
+        larger than 10 minutes. Once a contiguous window >= 24 hours is reached,
+        it is finalized and appended to the result.
 
     Args:
-        data: DataFrame (default: None)
-    
-    Returns:
-        A list of DataFrames.
+        data (pd.DataFrame): Assumed to have at least one column named 'datetime'
+                            containing Unix timestamps. Must be sorted or will
+                            be sorted by 'datetime'.
 
-    Exceptions:
-        None
+    Returns:
+        periods (list): A list of DataFrame segments, each covering >= 24 hours
+                        with no gap > 10 minutes.
     """
 
-    ## init
+    ## sort by datetime 
+    data = data.sort_values('datetime', ascending = True).reset_index(drop = True)
+    if data.empty:
+        return []
+
+    ## init vars
     periods = []
-    start_time = data['datetime'].min()
-    end_time = data['datetime'].max() + 86400
+    chunk_start = 0  ## start index for the current 24-hour window
+    min_24h = 86400  ## 24 hours in seconds
+    max_gap = 600  ## 10 minutes in seconds
 
-    ## divide into contiguous 24-hour periods with no gaps longer than 10 min
-    while start_time < end_time:
-        end_period = start_time + 86400
-        data_period = data[
-            (data['datetime'] >= start_time) & (data['datetime'] < end_period)
-        ]
+    ## single pass through the data
+    for i in range(1, len(data)):
+        gap = data.loc[i, 'datetime'] - data.loc[i - 1, 'datetime']
 
-        ## check for gaps longer than 10 minutes within the period
-        diffs = data_period['datetime'].diff()
-        if (diffs > 600).any():
-            gap_index = diffs[diffs > 600].index[0]
-            start_time = data_period.loc[gap_index, 'datetime']
+        ## check if a gap exceeds 10 minutes
+        if gap > max_gap:
+            if (data.loc[i - 1, 'datetime'] - data.loc[chunk_start, 'datetime']) >= min_24h:
+                chunk_df = data.iloc[chunk_start:i]
+                periods.append(chunk_df)
+            chunk_start = i  ## start a new window from current row
+
         else:
-            periods.append(data_period)
-            start_time = end_period
+            if (data.loc[i, 'datetime'] - data.loc[chunk_start, 'datetime']) >= min_24h:
+                chunk_df = data.iloc[chunk_start:(i + 1)]
+                periods.append(chunk_df)
+                chunk_start = i + 1  ## next window starts from the next row after
 
-        return periods
+    ## check for leftover segment at the end of 24 hours
+    last_i = len(data) - 1
+    if chunk_start < len(data):
+        if (data.loc[last_i, 'datetime'] - data.loc[chunk_start, 'datetime']) >= min_24h:
+            chunk_df = data.iloc[chunk_start:]
+            periods.append(chunk_df)
+
+    return periods
 
 ## save csv data to disk
 def to_csv(data_period, output_dir, data_index):

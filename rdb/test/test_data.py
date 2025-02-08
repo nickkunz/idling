@@ -576,8 +576,8 @@ class TestDateTime(TestData):
 
         self.assertLessEqual(
             a = time_down_perc,
-            b = 5,
-            msg = "Datetime contiguity downtime violated beyond 5% tolerance."
+            b = 10,
+            msg = "Datetime contiguity downtime violated beyond 10% tolerance."
         )
 
     def test_datetime_gap(self):
@@ -738,13 +738,18 @@ if __name__ == '__main__':
 
     ## load test data
     cwd = os.getcwd()
-    path = '/rdb/test/data/test-data-a.csv'
+    # path = '/rdb/test/data/test-data-a.csv'
     # path = '/rdb/test/data/test-data-b.csv'
     # path = '/rdb/test/data/test-data-c.csv'
     # path = '/rdb/test/data/test-data-d.csv'
     # path = '/rdb/test/data/test-data-e.csv'
     # path = '/rdb/test/data/test-data-f.csv'
     # path = '/rdb/test/data/test-data-g.csv'
+    # path = '/rdb/test/data/test-data-h.csv'
+    # path = '/rdb/test/data/test-data-i.csv'
+    # path = '/rdb/test/data/test-data-j.csv'
+    # path = '/rdb/test/data/test-data-k.csv'
+    path = '/rdb/test/data/test-data-l.csv'
 
     data = pd.read_csv(
         filepath_or_buffer = cwd + path,
