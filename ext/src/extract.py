@@ -239,7 +239,7 @@ class ExtractClient():
                         )
                     )
                 ## los angeles, miami
-                elif i in ['API_END_LAX', 'API_END_MIA']:
+                elif i in ['API_END_LAX', 'API_END_MIA', 'API_END_TPA']:
                     headers['Authorization'] = self.keys['API_KEY_LBM']
                     connection.append(
                         fetch(
