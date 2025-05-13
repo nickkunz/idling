@@ -15,7 +15,7 @@ An implementation of GRD-TRT-BUF-4I from the paper "Global Geolocated Realtime D
 <!-- Qanats 0.3.X --> 
 <!-- Eupalinos 0.2.X -->
 __Version__: Imhotep 0.1.3<br>
-__Updated__: February 2025
+__Updated__: May 2025
 
 
 ### Microservices
