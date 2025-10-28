@@ -47,6 +47,9 @@ RUN groupadd -g 999 group &&\
     useradd -u 999 -g group -d /home/user -m -s /bin/bash user &&\
     chown -R user:group /var/lib/nginx /var/log/nginx /etc/nginx /run /app/gui
 
+## secure ownership and permissions
+RUN chown -R user:group /app && chmod 750 /app/gui/start.sh
+
 ## run non-root user
 USER user
 
