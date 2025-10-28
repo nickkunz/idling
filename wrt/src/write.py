@@ -157,46 +157,46 @@ class WriteClient():
             except Exception as e:
                 logger.error(msg = 'Client failed to parse websocket response.')
 
-            ## insert events into table
+            ## insert events into table (use a long-lived connection)
             with self.lock:
                 query = self.sql_insert ## insert query
-                logger.debug(msg = 'Client successfully read SQL query.')
-                with self.connect.cursor() as cursor:  ## create cursor once
-                    for i in data:        
-                        try:
-                            cursor.execute(
-                                query = query,
-                                vars = (
-                                    str(i['iata_id']),
-                                    str(i['vehicle_id']),
-                                    str(i['trip_id']),
-                                    str(i['route_id']),
-                                    float(i['latitude']),
-                                    float(i['longitude']),
-                                    str(i['iata_id']),
-                                    str(i['vehicle_id']),
-                                    str(i['trip_id']),
-                                    str(i['route_id']),
-                                    float(i['latitude']),
-                                    float(i['longitude']),
-                                    int(i['datetime']),
-                                    int(i['duration']),
-                                    int(i['duration'])
-                                )
-                            )
+                logger.debug(msg = 'Client successfully read SQL query.')                
 
-                        ## undo failed attempt
-                        except Exception as e:
-                            self.connect.rollback()
-                            logger.error(
-                                msg = 'Client failed to write to database: {x}.'.format(
-                                    x = e
+                ## use a short-lived connection per thread event
+                try:
+                    with psycopg2.connect(
+                        database = self.db_name,
+                        user = self.db_user,
+                        password = self.db_pswd,
+                        host = self.db_host,
+                        port = self.db_port
+                    ) as conn:
+                        with conn.cursor() as cursor:
+                            for i in data:
+                                cursor.execute(
+                                    query = query,
+                                    vars = (
+                                        str(i['iata_id']),
+                                        str(i['vehicle_id']),
+                                        str(i['trip_id']),
+                                        str(i['route_id']),
+                                        float(i['latitude']),
+                                        float(i['longitude']),
+                                        str(i['iata_id']),
+                                        str(i['vehicle_id']),
+                                        str(i['trip_id']),
+                                        str(i['route_id']),
+                                        float(i['latitude']),
+                                        float(i['longitude']),
+                                        int(i['datetime']),
+                                        int(i['duration']),
+                                        int(i['duration'])
+                                    )
                                 )
-                            )
-                            return
-                    ## save changes to database
-                    self.connect.commit()              
-                    logger.info(msg = 'Client successfully wrote observations to database.')
+                        conn.commit()
+                        logger.info(msg = 'Client successfully wrote observations to database.')
+                except Exception as e:
+                    logger.error(msg = f'Database write failed: {e}')
 
     ## connect to websocket with threading
     def ws_thrd(self):
