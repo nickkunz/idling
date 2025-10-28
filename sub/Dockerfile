@@ -53,6 +53,9 @@ RUN pip3 install -r ./sub/requirements.txt
 ## open port
 EXPOSE 7080
 
+## secure ownership and permissions
+RUN chown -R user:group /app && chmod 750 /app/sub/start.sh
+
 ## run non-root user
 USER user
 
