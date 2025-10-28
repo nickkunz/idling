@@ -52,6 +52,9 @@ RUN pip3 install -r ./wrt/requirements.txt
 ## open port
 EXPOSE 6080
 
+## secure ownership and permissions
+RUN chown -R user:group /app && chmod 750 /app/wrt/start.sh
+
 ## run non-root user
 USER user
 
