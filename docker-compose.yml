@@ -4,6 +4,7 @@ volumes:
 
 services:
   extract:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: ./ext/Dockerfile
@@ -26,6 +27,7 @@ services:
     restart: always
 
   subset:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: ./sub/Dockerfile
@@ -51,6 +53,7 @@ services:
         condition: service_healthy
 
   write:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: ./wrt/Dockerfile
@@ -82,6 +85,7 @@ services:
         condition: service_healthy
 
   read:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: ./rdb/Dockerfile
@@ -111,6 +115,7 @@ services:
         condition: service_healthy
 
   database:
+    platform: linux/amd64
     image: postgres:16
     environment:
       POSTGRES_DB: idle
@@ -131,6 +136,7 @@ services:
     restart: always
 
   interface:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: ./gui/Dockerfile

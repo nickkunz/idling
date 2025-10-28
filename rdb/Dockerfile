@@ -53,6 +53,9 @@ RUN pip3 install -r ./rdb/requirements.txt
 ## open port
 EXPOSE 4080
 
+## secure ownership and permissions
+RUN chown -R user:group /app && chmod 750 /app/rdb/start.sh
+
 ## run non-root user
 USER user
 

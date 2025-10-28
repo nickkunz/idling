@@ -51,11 +51,14 @@ WORKDIR /app
 ## copy application
 COPY . /app
 
-## install libraires
+## install libraries
 RUN pip3 install -r ./ext/requirements.txt
 
 ## open port
 EXPOSE 8080
+
+## secure ownership and permissions
+RUN chown -R user:group /app && chmod 750 /app/ext/start.sh
 
 ## run non-root user
 USER user
