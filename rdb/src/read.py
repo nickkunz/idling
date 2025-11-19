@@ -8,6 +8,7 @@ import flask
 
 ## params
 LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
+DEFAULT_PAGE_SIZE = int(os.getenv(key = 'IDLE_PAGE_SIZE', default = '1000'))
 
 ## logging
 fmt = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -16,6 +17,12 @@ hdlr.setFormatter(fmt = fmt)
 logging.basicConfig(level = LOG_LEVEL, handlers = [hdlr])
 logger = logging.getLogger(name = __name__)
 logger.propagate = True
+
+def _to_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 ## error handling
 class DatabaseConnectionError(Exception):
@@ -390,15 +397,25 @@ class ReadClient():
 
         ## ensure default time window to avoid full table scans
         params = copy.deepcopy(params) if params else {}
+        use_inner_join = 'iata_id' in params and params['iata_id'] is not None
         if 'start_datetime' not in params:
             params['start_datetime'] = int(time.time()) - 24 * 60 * 60  ## last 24 hours
 
+        ## pagination controls (keyset pagination using datetime + vehicle_id)
+        limit_param = _to_int(params.pop('limit', None))
+        page_size = limit_param if limit_param else DEFAULT_PAGE_SIZE
+        if page_size <= 0:
+            page_size = DEFAULT_PAGE_SIZE
+        cursor_datetime = _to_int(params.pop('cursor_datetime', None))
+        cursor_vehicle = params.pop('cursor_vehicle_id', None)
+
         ## base query
+        join_type = 'INNER' if use_inner_join else 'LEFT'
         query = """
             SELECT agency.*, events.vehicle_id, events.trip_id, events.route_id, 
                    events.latitude, events.longitude, events.datetime, events.duration 
-            FROM agency LEFT JOIN events ON agency.iata_id = events.iata_id
-            """
+            FROM agency {join_type} JOIN events ON agency.iata_id = events.iata_id
+            """.format(join_type = join_type)
 
         ## build query
         values = list()
@@ -408,11 +425,16 @@ class ReadClient():
 
                 ## validate params
                 if key in params_valid:
+                    ## validate values using the correct source table to avoid expensive scans
                     if key.endswith('_id') or key in ['agency', 'city', 'country', 'region', 'continent']:
-                        check_query = "SELECT EXISTS(SELECT 1 FROM events WHERE {x} = %s)".format(x = key)
+                        table = params_valid[key]
+                        check_query = "SELECT 1 FROM {tbl} WHERE {col} = %s LIMIT 1".format(
+                            tbl = table,
+                            col = key
+                        )
                         with self.connect.cursor() as cur:
                             cur.execute(check_query, (val,))
-                            exists = cur.fetchone()[0]
+                            exists = bool(cur.fetchone())
                         if not exists:
                             raise InvalidParameterError('Invalid parameter value: {x}'.format(x = val))
                     if key == 'start_datetime':
@@ -432,7 +454,21 @@ class ReadClient():
                         values.append(val)
                 else:
                     raise InvalidParameterError('Invalid parameter: {x}'.format(x = key))
+            if cursor_datetime is not None:
+                if cursor_vehicle is not None:
+                    clauses.append("(events.datetime < %s OR (events.datetime = %s AND events.vehicle_id < %s))")
+                    values.extend([cursor_datetime, cursor_datetime, cursor_vehicle])
+                else:
+                    clauses.append("events.datetime < %s")
+                    values.append(cursor_datetime)
             query += " WHERE " + " AND ".join(clauses)
+        else:
+            if cursor_datetime is not None:
+                query += " WHERE events.datetime < %s"
+                values.append(cursor_datetime)
+
+        query += " ORDER BY events.datetime DESC, events.vehicle_id DESC LIMIT %s"
+        values.append(page_size)
         return query, values
 
     ## close database connection
