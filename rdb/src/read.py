@@ -388,17 +388,17 @@ class ReadClient():
             'continent': 'agency'
         }
 
-        ## ensure default time window to avoid full table scans
+        ## note: caller controls time window; no auto filtering applied here
         params = copy.deepcopy(params) if params else {}
-        if 'start_datetime' not in params:
-            params['start_datetime'] = int(time.time()) - 24 * 60 * 60  ## last 24 hours
+        use_inner_join = 'iata_id' in params and params['iata_id']
 
         ## base query
+        join_type = 'INNER' if use_inner_join else 'LEFT'
         query = """
             SELECT agency.*, events.vehicle_id, events.trip_id, events.route_id, 
                    events.latitude, events.longitude, events.datetime, events.duration 
-            FROM agency LEFT JOIN events ON agency.iata_id = events.iata_id
-            """
+            FROM agency {join_type} JOIN events ON agency.iata_id = events.iata_id
+            """.format(join_type = join_type)
 
         ## build query
         values = list()
@@ -409,10 +409,14 @@ class ReadClient():
                 ## validate params
                 if key in params_valid:
                     if key.endswith('_id') or key in ['agency', 'city', 'country', 'region', 'continent']:
-                        check_query = "SELECT EXISTS(SELECT 1 FROM events WHERE {x} = %s)".format(x = key)
+                        source_table = params_valid[key]
+                        check_query = "SELECT 1 FROM {tbl} WHERE {col} = %s LIMIT 1".format(
+                            tbl = source_table,
+                            col = key
+                        )
                         with self.connect.cursor() as cur:
                             cur.execute(check_query, (val,))
-                            exists = cur.fetchone()[0]
+                            exists = bool(cur.fetchone())
                         if not exists:
                             raise InvalidParameterError('Invalid parameter value: {x}'.format(x = val))
                     if key == 'start_datetime':

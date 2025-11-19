@@ -45,7 +45,7 @@ export default function RangeInput({ min, max, value: propValue, onChange, isPla
     useEffect(() => {
         if (isPlaying) {
             intervalRef.current = setInterval(() => {
-                let newValue = valueRef.current + 1000;
+                let newValue = valueRef.current + 1;
                 if (newValue > max) {
                     newValue = min;  // reset to start
                 }

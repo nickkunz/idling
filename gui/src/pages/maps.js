@@ -75,14 +75,14 @@ function LiveMap({ selectedCity }) {
             .then(fetchedData => {
                 if (fetchedData.features && fetchedData.features.length > 0) {
                     const timestamps = fetchedData.features.map(d =>
-                        new Date(d.properties.datetime).getTime()
+                        d.properties.datetime
                     );
                     const minTime = Math.min(...timestamps);
                     const maxTime = Math.max(...timestamps);
     
                     setData(fetchedData.features.map(d => ({
                         ...d,
-                        timestamp: new Date(d.properties.datetime).getTime()
+                        timestamp: d.properties.datetime
                     })));
                     setAnimationStartTime(minTime);
                     setAnimationEndTime(maxTime);
@@ -138,7 +138,7 @@ function LiveMap({ selectedCity }) {
         if (isPlaying && dataLoaded && data.length > 0) {
             interval = setInterval(() => {
                 setCurrentTime(time => {
-                    const newTime = time + 1000;  // increment every second
+                    const newTime = time + 1;  // increment every second
                     if (newTime > animationEndTime) {
                         return animationStartTime;  // reset for infinite loop
                     }

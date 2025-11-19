@@ -8,8 +8,8 @@ LOG_LEVEL = os.getenv(key = 'LOG_LEVEL', default = 'INFO')
 bind = "127.0.0.1:8000"
 
 ## workers (outbound traffic)
-workers = 1  ## one request at a time
-threads = 1
+workers = 2
+threads = 2
 
 ## timeouts
 timeout = 300
