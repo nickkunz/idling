@@ -1,6 +1,6 @@
 # GRD-TRT-BUF-4I: Interface Microservice
 
-__Version__: 0.1.5<br>
+__Version__: 0.1.6<br>
 __Updated__: November 2025
 
 ## Dependencies
