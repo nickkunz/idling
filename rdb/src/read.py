@@ -388,6 +388,11 @@ class ReadClient():
             'continent': 'agency'
         }
 
+        ## ensure default time window to avoid full table scans
+        params = copy.deepcopy(params) if params else {}
+        if 'start_datetime' not in params:
+            params['start_datetime'] = int(time.time()) - 24 * 60 * 60  ## last 24 hours
+
         ## base query
         query = """
             SELECT agency.*, events.vehicle_id, events.trip_id, events.route_id, 
